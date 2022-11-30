@@ -4,11 +4,28 @@
     <projectFile>Crypt/Crypt.vcxproj</projectFile>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c872a84f-e6b2-4893-95b7-b7540ad60204" name="Changes" comment="" />
+    <list default="true" id="c872a84f-e6b2-4893-95b7-b7540ad60204" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/Crypt/FourSquareCipher.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Crypt/XXTEA.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.Crypt/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Crypt/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Crypt/Crypt.vcxproj" beforeDir="false" afterPath="$PROJECT_DIR$/Crypt/Crypt.vcxproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Crypt/OneTimePad.h" beforeDir="false" afterPath="$PROJECT_DIR$/Crypt/OneTimePad.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Crypt/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Crypt/main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../uh/Crypt/.idea/.idea.Crypt/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../uh/Crypt/.idea/.idea.Crypt/.idea/vcs.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/include/array" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/include/execution" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/include/filesystem" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/include/iosfwd" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/include/utility" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/include/xmemory" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/include/xstring" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -18,15 +35,15 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;editor.preferences.fonts.default&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "settings.editor.selected.configurable": "ReSpellerSettingsId",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration name="Crypt" type="CppProject" factoryName="C++ Project">
       <configuration_1>
@@ -91,9 +108,37 @@
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="UnityCheckinConfiguration" checkUnsavedScenes="false" />
   <component name="UnityUnitTestConfiguration" currentTestLauncher="NUnit" />
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/Crypt/FourSquareCipher.h</url>
+          <line>111</line>
+          <option name="timeStamp" value="17" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+    <watches-manager>
+      <configuration name="CppProject">
+        <watch expression="chars" />
+      </configuration>
+    </watches-manager>
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
