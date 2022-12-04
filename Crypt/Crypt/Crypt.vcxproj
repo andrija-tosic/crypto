@@ -19,11 +19,17 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BmpEncrypter.cpp" />
+    <ClCompile Include="BmpEncrypter.h" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="OneTimePad.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FourSquareCipher.h" />
+    <ClInclude Include="Md5.h" />
     <ClInclude Include="OneTimePad.h" />
+    <ClInclude Include="Sha1.h" />
+    <ClInclude Include="XXTEA.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -128,6 +134,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
