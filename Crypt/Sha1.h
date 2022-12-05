@@ -17,7 +17,7 @@ using namespace std::chrono_literals;
 RFC 3174
 https://www.rfc-editor.org/rfc/rfc3174
 */
-class Sha1 {
+class SHA1 {
 	static constexpr size_t WORDS_PER_BLOCK = 16; // Word = 32-bit.
 	static constexpr size_t BLOCK_BYTES = WORDS_PER_BLOCK * 4;
 
@@ -53,19 +53,6 @@ class Sha1 {
 		 D and produces a 32-bit word as output.  f(t;B,C,D) is defined as
 		 follows: for words B, C, D,
 	*/
-	static uint32_t f_0_to_19(uint32_t B, uint32_t C, uint32_t D) {
-		return (B & C) | ((~B) & D);
-	}
-	static uint32_t f_20_to_39(uint32_t B, uint32_t C, uint32_t D) {
-		return B ^ C ^ D;
-	}
-	static uint32_t f_40_to_59(uint32_t B, uint32_t C, uint32_t D) {
-		return (B & C) | (B & D) | (C & D);
-	}
-	static uint32_t f_60_to_79(uint32_t B, uint32_t C, uint32_t D) {
-		return f_20_to_39(B, C, D);
-	}
-
 	static uint32_t ff(size_t t, uint32_t B, uint32_t C, uint32_t D) {
 		if (t >= 0 && t <= 19) {
 			return (B & C) | ((~B) & D);
@@ -77,20 +64,6 @@ class Sha1 {
 			return (B & C) | (B & D) | (C & D);
 		}
 	}
-
-	static constexpr FunctionPointer f[80] = {
-		f_0_to_19, f_0_to_19, f_0_to_19, f_0_to_19, f_0_to_19, f_0_to_19, f_0_to_19, f_0_to_19, f_0_to_19, f_0_to_19,
-		f_0_to_19, f_0_to_19, f_0_to_19, f_0_to_19, f_0_to_19, f_0_to_19, f_0_to_19, f_0_to_19, f_0_to_19, f_0_to_19,
-
-		f_20_to_39, f_20_to_39, f_20_to_39, f_20_to_39, f_20_to_39, f_20_to_39, f_20_to_39, f_20_to_39, f_20_to_39,
-		f_20_to_39, f_20_to_39, f_20_to_39, f_20_to_39, f_20_to_39, f_20_to_39, f_20_to_39, f_20_to_39, f_20_to_39,
-
-		f_40_to_59, f_40_to_59, f_40_to_59, f_40_to_59, f_40_to_59, f_40_to_59, f_40_to_59, f_40_to_59, f_40_to_59,
-		f_40_to_59, f_40_to_59, f_40_to_59, f_40_to_59, f_40_to_59, f_40_to_59, f_40_to_59, f_40_to_59, f_40_to_59,
-
-		f_60_to_79, f_60_to_79, f_60_to_79, f_60_to_79, f_60_to_79, f_60_to_79, f_60_to_79, f_60_to_79, f_60_to_79,
-		f_60_to_79, f_60_to_79, f_60_to_79, f_60_to_79, f_60_to_79, f_60_to_79, f_60_to_79, f_60_to_79, f_60_to_79
-	};
 
 	static void final_pad_message(std::vector<uint8_t> message, size_t l, uint32_t& H0, uint32_t& H1, uint32_t& H2, uint32_t& H3, uint32_t& H4) {
 		size_t space_for_length_append = 2 * sizeof(uint32_t);
@@ -106,6 +79,12 @@ class Sha1 {
 		// a. "1" is appended.	
 		message.push_back(0x80);
 
+		/*
+			Check to see if the current message block is too small to hold
+			the initial padding bits and length.  If so, we will pad the
+			block, process it, and then continue padding into a second
+			block.
+		*/
 		if (message.size() > BLOCK_BYTES - space_for_length_append) {
 			/* Edge case: size of block is between 56 and 64 bytes. One more block transform is needed. */
 			/* Both blocks are padded to 64 bytes. */
@@ -116,7 +95,9 @@ class Sha1 {
 
 #if SHA_DEBUG
 			printf("\n[Before] H0 H1 H2 H3 H4: %x %x %x %x %x\n", H0, H1, H2, H3, H4);
+#endif
 			process_block(message, H0, H1, H2, H3, H4);
+#if SHA_DEBUG
 			printf("\n[After] H0 H1 H2 H3 H4: %x %x %x %x %x\n\n", H0, H1, H2, H3, H4);
 #endif
 			/* Processing final block. Vector is 64 bytes at this point. */
@@ -140,25 +121,24 @@ class Sha1 {
 			Append these two words to the padded message.
 		*/
 
-		l = l * 8; // l was stored in bytes.
+		l = l * 8; // convert l from bytes to bits.
 
-		uint32_t upper_word_representation = (uint32_t)(l >> 32);
-		uint32_t lower_word_representation = (uint32_t)l;
+		uint32_t length_high = (uint32_t)(l >> 32);
+		uint32_t length_low = (uint32_t)l;
 
 #if BIG_ENDIAN
 		upper_word_representation = make_big_endian_uint32(upper_word_representation);
 		lower_word_representation = make_big_endian_uint32(lower_word_representation);
 #endif
-		message.push_back((upper_word_representation & 0xff000000) >> 24);
-		message.push_back((upper_word_representation & 0x00ff0000) >> 16);
-		message.push_back((upper_word_representation & 0x0000ff00) >> 8);
-		message.push_back(upper_word_representation & 0x000000ff);
+		message.push_back(length_high >> 24);
+		message.push_back(length_high >> 16);
+		message.push_back(length_high >> 8);
+		message.push_back(length_high);
 
-
-		message.push_back((lower_word_representation & 0xff000000) >> 24);
-		message.push_back((lower_word_representation & 0x00ff0000) >> 16);
-		message.push_back((lower_word_representation & 0x0000ff00) >> 8);
-		message.push_back(lower_word_representation & 0x000000ff);
+		message.push_back(length_low >> 24);
+		message.push_back(length_low >> 16);
+		message.push_back(length_low >> 8);
+		message.push_back(length_low);
 
 
 #if SHA_DEBUG
@@ -211,16 +191,16 @@ class Sha1 {
 
 		/* b. */
 		for (; t < 80; t++)
-			W[t] = circular_left_shift(1, W[t - 3] ^ W[t - 8] ^ W[t - 14] ^ W[t - 16]);
+			W[t] = SHA1::circular_left_shift(1, W[t - 3] ^ W[t - 8] ^ W[t - 14] ^ W[t - 16]);
 
 		/* c. */
 		uint32_t A = H0, B = H1, C = H2, D = H3, E = H4;
 
 		/* d. */
 		for (size_t t = 0; t < 80; t++) {
-			uint32_t TEMP = circular_left_shift(5, A) + ff(t, B, C, D) + E + W[t] + K[t];
+			uint32_t TEMP = SHA1::circular_left_shift(5, A) + ff(t, B, C, D) + E + W[t] + K[t];
 
-			E = D;  D = C;  C = circular_left_shift(30, B);  B = A; A = TEMP;
+			E = D;  D = C;  C = SHA1::circular_left_shift(30, B);  B = A; A = TEMP;
 		}
 
 		/* e. */
@@ -228,12 +208,12 @@ class Sha1 {
 	}
 
 public:
-	Sha1() = delete;
-	~Sha1() = delete;
-	Sha1(const Sha1&) = delete;
-	Sha1(const Sha1&&) = delete;
-	Sha1 operator=(const Sha1&) = delete;
-	Sha1 operator=(const Sha1&&) = delete;
+	SHA1() = delete;
+	~SHA1() = delete;
+	SHA1(const SHA1&) = delete;
+	SHA1(const SHA1&&) = delete;
+	SHA1 operator=(const SHA1&) = delete;
+	SHA1 operator=(const SHA1&&) = delete;
 
 	static std::string hash(const std::string& file_path) {
 		std::basic_ifstream<uint8_t> file(file_path, std::ios::in | std::ios::binary);
@@ -242,7 +222,7 @@ public:
 			throw std::exception("File error");
 		}
 
-		std::cout << "Thread ID: " << std::this_thread::get_id() << std::endl;
+		//std::cout << "Thread ID: " << std::this_thread::get_id() << std::endl;
 
 		file.ignore(std::numeric_limits<std::streamsize>::max());
 		std::streamsize file_size = file.gcount();
@@ -267,8 +247,6 @@ public:
 		//uint32_t H3 = 0x76543210;
 		//uint32_t H4 = 0xF0E1D2C3;
 
-		std::array<uint32_t, WORDS_PER_BLOCK> block_of_words{};
-
 		size_t l = 0;
 
 		std::streamsize c;
@@ -289,12 +267,12 @@ public:
 			std::cout << "SHA1 progress: " << ((double)l / file_size) * 100 << std::endl << std::flush;
 
 			assert(block_buf.size() == BLOCK_BYTES && "process_block: invalid block size");
-			process_block(block_buf, H0, H1, H2, H3, H4);
+			SHA1::process_block(block_buf, H0, H1, H2, H3, H4);
 		}
 
 		assert(l == file_size && "Whole file wasn't read.");
 
-		final_pad_message(block_buf, l, H0, H1, H2, H3, H4);
+		SHA1::final_pad_message(block_buf, l, H0, H1, H2, H3, H4);
 
 		std::ostringstream result{};
 		result << std::hex << std::setfill('0') << std::setw(8);
@@ -316,9 +294,11 @@ public:
 			return true;
 		}
 
-		std::future<std::string> hash1 = std::async(hash, file1_path);
-		std::future<std::string> hash2 = std::async(hash, file2_path);
+		//std::future<std::string> hash1 = std::async(hash, file1_path);
+		//std::future<std::string> hash2 = std::async(hash, file2_path);
 
-		return hash1.get() == hash2.get();
+		return SHA1::hash(file1_path) == SHA1::hash(file2_path);
+
+		//return hash1.get() == hash2.get();
 	}
 };

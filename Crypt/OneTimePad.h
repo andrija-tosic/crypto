@@ -5,12 +5,9 @@
 #include <string>
 #include <fstream>
 
-class OneTimePad
-{
+class OneTimePad {
+protected:
 	static constexpr size_t BUF_SIZE = 4096;
-	static uint64_t x, y, z;
-
-	static uint64_t xorshf96();
 
 public:
 	OneTimePad() = delete;

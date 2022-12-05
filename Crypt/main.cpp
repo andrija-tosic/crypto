@@ -1,11 +1,14 @@
-#include "FourSquareCipher.h"
 #include "OneTimePad.h"
-#include "Sha1.h"
-#include "BmpEncrypter.h"
+#include "FourSquareCipher.h"
+#include "XXTEA.h"
+#include "SHA1.h"
+#include "BMPEncrypter.h"
+
 
 #include <iostream>
 
 int main() {
+	std::cout << std::boolalpha;
 
 	auto start = std::chrono::high_resolution_clock::now();
 
@@ -22,16 +25,16 @@ int main() {
 	//OneTimePad::encrypt(otp_file, otp_file_encrypted, otp_key_file);
 	//OneTimePad::decrypt(otp_file_encrypted, otp_file_decrypted, otp_key_file);
 
-	auto end = std::chrono::high_resolution_clock::now();
+	//auto end = std::chrono::high_resolution_clock::now();
 
-	std::cout << "Four square cipher time: " << std::chrono::duration_cast<std::chrono::seconds>(end - start);
+	//std::cout << "Four square cipher time: " << std::chrono::duration_cast<std::chrono::seconds>(end - start);
 
 	// FourSquareCipher::encrypt("D:\\Desktop\\a.txt", "D:\\Desktop\\fsc.txt");
 	// FourSquareCipher::decrypt("D:\\Desktop\\fsc.txt", "D:\\Desktop\\b.txt");
 
 	const std::string sha1_file = R"(D:\\Desktop\\a.txt)";
 
-	//std::cout << Sha1::hash(sha1_file) << std::endl << std::endl;
+	std::cout << "Sha1: " << SHA1::hash(sha1_file) << std::endl << std::endl;
 
 	//std::cout << Sha1::compare_files(R"(D:\\Desktop\\dr dre.jpg)", R"(D:\\Desktop\\dr dre decrypted.jpg)") << std::endl;
 
@@ -41,16 +44,21 @@ int main() {
 	//BmpEncrypter::open_file_with_default_program(R"(D:\Desktop\AM encrypted.bmp)");
 	//BmpEncrypter::open_file_with_default_program(R"(D:\Desktop\AM decrypted.bmp)");
 
-	start = std::chrono::high_resolution_clock::now();
+	//start = std::chrono::high_resolution_clock::now();
 
 	//std::cout << Sha1::compare_files(R"(D:\Desktop\AM.bmp)", R"(D:\Desktop\AM decrypted.bmp)") << std::endl;
 
-	std::cout << Sha1::compare_files(otp_file, otp_file_encrypted) << std::endl;
+	//std::cout << Sha1::compare_files(otp_file, otp_file_encrypted) << std::endl;
 
 
-	end = std::chrono::high_resolution_clock::now();
+	//end = std::chrono::high_resolution_clock::now();
 
-	std::cout << "SHA1: " << std::chrono::duration_cast<std::chrono::seconds>(end - start);
+	//std::cout << "SHA1: " << std::chrono::duration_cast<std::chrono::seconds>(end - start);
+
+	XXTEA::encrypt(R"(D:\Desktop\b.txt)", R"(D:\Desktop\b encrypted.txt)", "123");
+	XXTEA::decrypt(R"(D:\Desktop\b encrypted.txt)", R"(D:\Desktop\b decrypted.txt)", "123");
+	std::cout << "Hash comparison: " << SHA1::compare_files(R"(D:\Desktop\b.txt)", R"(D:\Desktop\b decrypted.txt)") << std::endl;
+
 
 	return 0;
 }

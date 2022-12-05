@@ -21,10 +21,10 @@
     <ClCompile Include="OneTimePad.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BmpEncrypter.h">
+    <ClCompile Include="BMPEncrypter.h">
       <Filter>Header Files</Filter>
     </ClCompile>
-    <ClCompile Include="BmpEncrypter.cpp">
+    <ClCompile Include="BMPEncrypter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -35,13 +35,16 @@
     <ClInclude Include="FourSquareCipher.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Md5.h">
+    <ClInclude Include="MD5.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="XXTEA.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Sha1.h">
+    <ClInclude Include="SHA1.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RNG.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -8,13 +8,13 @@
 RFC 1321
 https://www.rfc-editor.org/rfc/rfc1321
 */
-class Md5 {
-	Md5() = delete;
-	~Md5() = delete;
-	Md5(const Md5&) = delete;
-	Md5(const Md5&&) = delete;
-	Md5 operator=(const Md5&) = delete;
-	Md5 operator=(const Md5&&) = delete;
+class MD5 {
+	MD5() = delete;
+	~MD5() = delete;
+	MD5(const MD5&) = delete;
+	MD5(const MD5&&) = delete;
+	MD5 operator=(const MD5&) = delete;
+	MD5 operator=(const MD5&&) = delete;
 
 	/* Lookup table 4294967296 * sin(i). */
 	static const uint32_t T[64];
@@ -210,9 +210,6 @@ public:
 		}
 
 		size_t padding = multiple - file_size;
-
-
-
 	}
 
 	static bool compare(const std::string& file1_path, const std::string& file2_path) {

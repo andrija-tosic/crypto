@@ -5,7 +5,7 @@
 #include <vector>
 #include "OneTimePad.h"
 
-class BmpEncrypter {
+class BMPEncrypter {
 	static constexpr size_t BUF_SIZE = 4096;
 
 	struct BmpFileHeader {

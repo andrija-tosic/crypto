@@ -19,16 +19,17 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BmpEncrypter.cpp" />
-    <ClCompile Include="BmpEncrypter.h" />
+    <ClCompile Include="BMPEncrypter.cpp" />
+    <ClCompile Include="BMPEncrypter.h" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="OneTimePad.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FourSquareCipher.h" />
-    <ClInclude Include="Md5.h" />
+    <ClInclude Include="MD5.h" />
     <ClInclude Include="OneTimePad.h" />
-    <ClInclude Include="Sha1.h" />
+    <ClInclude Include="RNG.h" />
+    <ClInclude Include="SHA1.h" />
     <ClInclude Include="XXTEA.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
