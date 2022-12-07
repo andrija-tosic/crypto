@@ -3,6 +3,7 @@
 #include <fstream>
 #include <vector>
 #include <array>
+#include <filesystem>
 
 /*
 RFC 1321
@@ -198,10 +199,7 @@ public:
 	static std::array<uint8_t, 128> hash_file(const std::string& file_path) {
 		std::basic_ifstream<uint8_t> file(file_path, std::ios::in | std::ios::binary);
 
-		file.ignore(std::numeric_limits<std::streamsize>::max());
-		std::streamsize file_size = file.gcount();
-		file.clear();
-		file.seekg(0, std::ios_base::beg);
+		uintmax_t file_size = std::filesystem::file_size(file_path);
 
 		size_t multiple = 512;
 

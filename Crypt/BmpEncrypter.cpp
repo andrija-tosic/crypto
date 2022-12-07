@@ -1,5 +1,6 @@
 #include "BMPEncrypter.h"
 #include "windows.h"
+#include <filesystem>
 #undef max
 #undef min
 
@@ -12,10 +13,7 @@ void BMPEncrypter::encrypt_one_time_pad(const std::string& in_file_path, const s
 		throw std::exception("File error");
 	}
 
-	file.ignore(std::numeric_limits<std::streamsize>::max());
-	std::streamsize file_size = file.gcount();
-	file.clear();
-	file.seekg(0, std::ios_base::beg);
+	uintmax_t file_size = std::filesystem::file_size(in_file_path);
 
 	size_t buffer_size = std::min((size_t)file_size, BUF_SIZE);
 
@@ -37,10 +35,7 @@ void BMPEncrypter::decrypt_one_time_pad(const std::string& in_file_path, const s
 		throw std::exception("File error");
 	}
 
-	file.ignore(std::numeric_limits<std::streamsize>::max());
-	std::streamsize file_size = file.gcount();
-	file.clear();
-	file.seekg(0, std::ios_base::beg);
+	uintmax_t file_size = std::filesystem::file_size(in_file_path);
 
 	size_t buffer_size = std::min((size_t)file_size, BUF_SIZE);
 

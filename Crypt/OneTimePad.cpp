@@ -10,10 +10,7 @@ void OneTimePad::encrypt(const std::string& file_path, const std::string& out_fi
 		throw std::exception("File error");
 	}
 
-	file.ignore(std::numeric_limits<std::streamsize>::max());
-	std::streamsize file_size = file.gcount();
-	file.clear();
-	file.seekg(0, std::ios_base::beg);
+	uintmax_t file_size = std::filesystem::file_size(file_path);
 
 	size_t buffer_size = std::min((size_t)file_size, OneTimePad::BUF_SIZE);
 
@@ -72,10 +69,7 @@ void OneTimePad::decrypt(const std::string& file_path, const std::string& out_fi
 	std::basic_ofstream<uint8_t> outfile(out_file_path, std::ios::out | std::ios::binary);
 	std::basic_ifstream<uint8_t> in_pad_file(pad_key_file_path, std::ios::in | std::ios::binary);
 
-	file.ignore(std::numeric_limits<std::streamsize>::max());
-	std::streamsize file_size = file.gcount();
-	file.clear();
-	file.seekg(0, std::ios_base::beg);
+	uintmax_t file_size = std::filesystem::file_size(file_path);
 
 	size_t buffer_size = std::min((size_t)file_size, OneTimePad::BUF_SIZE);
 

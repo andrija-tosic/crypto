@@ -113,10 +113,7 @@ public:
 			throw std::exception("File error");
 		}
 
-		file.ignore(std::numeric_limits<std::streamsize>::max());
-		std::streamsize file_size = file.gcount();
-		file.clear();
-		file.seekg(0, std::ios_base::beg);
+		uintmax_t file_size = std::filesystem::file_size(file_path);
 
 		size_t buffer_size = std::min((size_t)file_size, XXTEA::BLOCK_BUF_SIZE);
 
@@ -177,10 +174,7 @@ public:
 			throw std::exception("File error");
 		}
 
-		file.ignore(std::numeric_limits<std::streamsize>::max());
-		std::streamsize file_size = file.gcount();
-		file.clear();
-		file.seekg(0, std::ios_base::beg);
+		uintmax_t file_size = std::filesystem::file_size(file_path);
 
 		size_t buffer_size = std::min((size_t)file_size, XXTEA::BLOCK_BUF_SIZE);
 

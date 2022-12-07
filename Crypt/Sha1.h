@@ -8,8 +8,6 @@
 #include <future>
 #include <iostream>
 
-#define BIG_ENDIAN 0
-
 #define SHA_DEBUG 0
 
 using namespace std::chrono_literals;
@@ -97,6 +95,7 @@ class SHA1 {
 			printf("\n[Before] H0 H1 H2 H3 H4: %x %x %x %x %x\n", H0, H1, H2, H3, H4);
 #endif
 			process_block(message, H0, H1, H2, H3, H4);
+
 #if SHA_DEBUG
 			printf("\n[After] H0 H1 H2 H3 H4: %x %x %x %x %x\n\n", H0, H1, H2, H3, H4);
 #endif
@@ -121,7 +120,7 @@ class SHA1 {
 			Append these two words to the padded message.
 		*/
 
-		l = l * 8; // convert l from bytes to bits.
+		l = l * 8; /* Convert l from bytes to bits. */
 
 		uint32_t length_high = (uint32_t)(l >> 32);
 		uint32_t length_low = (uint32_t)l;
@@ -143,19 +142,18 @@ class SHA1 {
 
 #if SHA_DEBUG
 		printf("\n[Before] H0 H1 H2 H3 H4: %x %x %x %x %x\n", H0, H1, H2, H3, H4);
+#endif
 		process_block(message, H0, H1, H2, H3, H4);
+
+#if SHA_DEBUG
 		printf("\n[After] H0 H1 H2 H3 H4: %x %x %x %x %x\n\n", H0, H1, H2, H3, H4);
 		printf("[Message after padding]: \n");
 		for (int i = 0; i < message.size(); i++) {
 			printf("%02x", message[i]);
 		}
 		printf("\n");
-#endif
-	}
 
-	static uint32_t to_big_endian_uint32(uint32_t val) {
-		val = ((val << 8) & 0xff00ff00) | ((val >> 8) & 0xff00ff);
-		return (val << 16) | (val >> 16);
+#endif
 	}
 
 	/*
@@ -172,7 +170,7 @@ class SHA1 {
 		 circular shift of X by n positions to the left.
 	*/
 	static uint32_t circular_left_shift(size_t n, uint32_t X) {
-		return (X << n) | (X >> n);
+		return (X << n) | (X >> (32 - n));
 	}
 
 	static void process_block(const std::vector<uint8_t>& buffer_block,
@@ -190,7 +188,7 @@ class SHA1 {
 			| (buffer_block[t * 4 + 3] & 0xff) << 0;
 
 		/* b. */
-		for (; t < 80; t++)
+		for (t = 16; t < 80; t++)
 			W[t] = SHA1::circular_left_shift(1, W[t - 3] ^ W[t - 8] ^ W[t - 14] ^ W[t - 16]);
 
 		/* c. */
@@ -224,10 +222,7 @@ public:
 
 		//std::cout << "Thread ID: " << std::this_thread::get_id() << std::endl;
 
-		file.ignore(std::numeric_limits<std::streamsize>::max());
-		std::streamsize file_size = file.gcount();
-		file.clear();
-		file.seekg(0, std::ios_base::beg);
+		uintmax_t file_size = std::filesystem::file_size(file_path);
 
 		size_t buffer_size = std::min((size_t)file_size, BLOCK_BYTES);
 
@@ -240,12 +235,6 @@ public:
 		uint32_t H2 = 0x98BADCFE;
 		uint32_t H3 = 0x10325476;
 		uint32_t H4 = 0xC3D2E1F0;
-
-		//uint32_t H0 = 0x01234567;
-		//uint32_t H1 = 0x89ABCDEF;
-		//uint32_t H2 = 0xFEDCBA98;
-		//uint32_t H3 = 0x76543210;
-		//uint32_t H4 = 0xF0E1D2C3;
 
 		size_t l = 0;
 
@@ -277,15 +266,7 @@ public:
 		std::ostringstream result{};
 		result << std::hex << std::setfill('0') << std::setw(8);
 
-#if BIG_ENDIAN
-		result << make_big_endian_uint32(H0)
-			<< make_big_endian_uint32(H1)
-			<< make_big_endian_uint32(H2)
-			<< make_big_endian_uint32(H3)
-			<< make_big_endian_uint32(H4);
-#else
 		result << H0 << H1 << H2 << H3 << H4;
-#endif
 		return result.str();
 	};
 

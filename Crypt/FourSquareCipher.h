@@ -102,16 +102,13 @@ public:
 	FourSquareCipher operator=(const FourSquareCipher&&) = delete;
 
 
-	static void encrypt(const std::string& file_path, const std::string& out_file_path) {
+	static void encrypt(const std::string& file_path, const std::string& out_file_path, const std::string& key1, const std::string& key2) {
 		std::basic_ifstream<char> file(file_path, std::ios::in);
 		std::basic_ofstream<char> outfile(out_file_path, std::ios::out);
 
-		file.ignore(std::numeric_limits<std::streamsize>::max());
-		std::streamsize file_size = file.gcount();
-		file.clear();
-		file.seekg(0, std::ios_base::beg);
+		uintmax_t file_size = std::filesystem::file_size(file_path);
 
-		std::streamsize buf_size = std::min(static_cast<std::streamsize>(1024), file_size);
+		uintmax_t buf_size = std::min((uintmax_t)1024, file_size);
 		auto text_buf = new char[buf_size];
 
 		while (file.good()) {
@@ -121,7 +118,7 @@ public:
 
 			std::vector<std::pair<char, char>> bigram = text_to_bigrams(t);
 			std::vector<std::pair<char, char>> encrypted_bigram = encrypt_bigram(
-				bigram, "zgptfoihmuwdrcnykeqaxvsbl", "mfnbdcrhsaxyogvituewlqzkp");
+				bigram, key1, key2);
 
 			std::string out_str{};
 			for (auto& [fst, snd] : encrypted_bigram) {
@@ -138,16 +135,13 @@ public:
 		outfile.close();
 	}
 
-	static void decrypt(const std::string& file_path, const std::string& out_file_path) {
+	static void decrypt(const std::string& file_path, const std::string& out_file_path, const std::string& key1, const std::string& key2) {
 		std::basic_ifstream<char> file(file_path, std::ios::in);
 		std::basic_ofstream<char> outfile(out_file_path, std::ios::out);
 
-		file.ignore(std::numeric_limits<std::streamsize>::max());
-		std::streamsize file_size = file.gcount();
-		file.clear();
-		file.seekg(0, std::ios_base::beg);
+		uintmax_t file_size = std::filesystem::file_size(file_path);
 
-		std::streamsize buf_size = std::min(static_cast<std::streamsize>(1024), file_size);
+		uintmax_t buf_size = std::min((uintmax_t)1024, file_size);
 		auto text_buf = new char[buf_size];
 
 		while (file.good()) {
@@ -156,8 +150,7 @@ public:
 			const std::string t(text_buf, text_buf + buf_size);
 
 			std::vector<std::pair<char, char>> bigram = text_to_bigrams(t);
-			std::vector<std::pair<char, char>> decrypted_bigram = decrypt_bigram(bigram, "zgptfoihmuwdrcnykeqaxvsbl",
-				"mfnbdcrhsaxyogvituewlqzkp");
+			std::vector<std::pair<char, char>> decrypted_bigram = decrypt_bigram(bigram, key1, key2);
 
 			std::string out_str{};
 			for (auto& [fst, snd] : decrypted_bigram) {
