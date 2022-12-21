@@ -21,8 +21,12 @@
   <ItemGroup>
     <ClCompile Include="BMPEncrypter.cpp" />
     <ClCompile Include="BMPEncrypter.h" />
+    <ClCompile Include="FourSquareCipher.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="OneTimePad.cpp" />
+    <ClCompile Include="RNG.cpp" />
+    <ClCompile Include="SHA1.cpp" />
+    <ClCompile Include="XXTEA.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FourSquareCipher.h" />
@@ -31,6 +35,15 @@
     <ClInclude Include="RNG.h" />
     <ClInclude Include="SHA1.h" />
     <ClInclude Include="XXTEA.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\bmp_otp_example.bmp" />
+    <Image Include="res\otp_example.jpg" />
+    <Image Include="res\otp_ofb_example.jpg" />
+    <Image Include="res\xxtea_example.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="res\fsc_example.txt" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

@@ -27,6 +27,18 @@
     <ClCompile Include="BMPEncrypter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FourSquareCipher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RNG.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SHA1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="XXTEA.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="OneTimePad.h">
@@ -47,5 +59,24 @@
     <ClInclude Include="RNG.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\xxtea_example.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\bmp_otp_example.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\otp_example.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\otp_ofb_example.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="res\fsc_example.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
   </ItemGroup>
 </Project>

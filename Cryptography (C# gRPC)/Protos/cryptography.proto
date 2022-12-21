@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package cryptography;
+
+service Cryptography {
+  rpc ComputeSHA1Hash(stream Bytes) returns (SHA1HashResult);
+
+  rpc EncryptOneTimePad(stream Bytes) returns (stream OneTimePadResult);
+  rpc DecryptOneTimePad(stream OneTimePadResult) returns (stream Bytes);
+
+  rpc EncryptBMP(stream Bytes) returns (stream Bytes);
+  rpc DecryptBMP(stream Bytes) returns (stream Bytes);
+
+  rpc EncryptXXTEA(stream XXTEARequest) returns (stream Bytes);
+  rpc DecryptXXTEA(stream XXTEARequest) returns (stream Bytes);
+
+  rpc EncryptFourSquareCipher(stream FourSquareCipherText) returns (stream FourSquareCipherText);
+  rpc DecryptFourSquareCipher(stream FourSquareCipherText) returns (stream FourSquareCipherText);
+
+  rpc EncryptOneTimePadOFB(stream Bytes) returns (stream OneTimePadResult);
+  rpc DecryptOneTimePadOFB(stream OneTimePadResult) returns (stream Bytes);
+
+  rpc EncryptOneTimePadParallel(stream Bytes) returns (stream OneTimePadResult);
+  rpc DecryptOneTimePadParallel(stream OneTimePadResult) returns (stream Bytes);
+}
+
+message Bytes {
+	bytes bytes = 1;
+}
+
+message FourSquareCipherText {
+	string text = 1;
+}
+
+message SHA1HashResult {
+	string hash = 1;
+}
+
+message OneTimePadResult {
+	bytes encrpyted_file = 1;
+	bytes pad = 2;
+}
+
+message XXTEARequest {
+	bytes file = 1;
+	string key = 2;
+}
