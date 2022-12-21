@@ -3,28 +3,28 @@ syntax = "proto3";
 package cryptography;
 
 service Cryptography {
-  rpc ComputeSHA1Hash(stream Bytes) returns (SHA1HashResult);
+  rpc ComputeSHA1Hash(stream ByteArray) returns (SHA1HashResult);
 
-  rpc EncryptOneTimePad(stream Bytes) returns (stream OneTimePadResult);
-  rpc DecryptOneTimePad(stream OneTimePadResult) returns (stream Bytes);
+  rpc EncryptOneTimePad(stream ByteArray) returns (stream OneTimePadResult);
+  rpc DecryptOneTimePad(stream OneTimePadResult) returns (stream ByteArray);
 
-  rpc EncryptBMP(stream Bytes) returns (stream Bytes);
-  rpc DecryptBMP(stream Bytes) returns (stream Bytes);
+  rpc EncryptBMP(stream ByteArray) returns (stream ByteArray);
+  rpc DecryptBMP(stream ByteArray) returns (stream ByteArray);
 
-  rpc EncryptXXTEA(stream XXTEARequest) returns (stream Bytes);
-  rpc DecryptXXTEA(stream XXTEARequest) returns (stream Bytes);
+  rpc EncryptXXTEA(stream XXTEARequest) returns (stream ByteArray);
+  rpc DecryptXXTEA(stream XXTEARequest) returns (stream ByteArray);
 
   rpc EncryptFourSquareCipher(stream FourSquareCipherText) returns (stream FourSquareCipherText);
   rpc DecryptFourSquareCipher(stream FourSquareCipherText) returns (stream FourSquareCipherText);
 
-  rpc EncryptOneTimePadOFB(stream Bytes) returns (stream OneTimePadResult);
-  rpc DecryptOneTimePadOFB(stream OneTimePadResult) returns (stream Bytes);
+  rpc EncryptOneTimePadOFB(stream ByteArray) returns (stream OneTimePadResult);
+  rpc DecryptOneTimePadOFB(stream OneTimePadResult) returns (stream ByteArray);
 
-  rpc EncryptOneTimePadParallel(stream Bytes) returns (stream OneTimePadResult);
-  rpc DecryptOneTimePadParallel(stream OneTimePadResult) returns (stream Bytes);
+  rpc EncryptOneTimePadParallel(stream ByteArray) returns (stream OneTimePadResult);
+  rpc DecryptOneTimePadParallel(stream OneTimePadResult) returns (stream ByteArray);
 }
 
-message Bytes {
+message ByteArray {
 	bytes bytes = 1;
 }
 
@@ -37,11 +37,11 @@ message SHA1HashResult {
 }
 
 message OneTimePadResult {
-	bytes encrpyted_file = 1;
-	bytes pad = 2;
+	ByteArray encrpyted_file = 1;
+	ByteArray pad = 2;
 }
 
 message XXTEARequest {
-	bytes file = 1;
+	ByteArray file = 1;
 	string key = 2;
 }

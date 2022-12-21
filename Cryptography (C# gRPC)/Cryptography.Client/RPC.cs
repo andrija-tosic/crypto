@@ -15,7 +15,7 @@ class RPC
 
         while (await blockStream.MoveNext())
         {
-            await call.RequestStream.WriteAsync(new SHA1BytesInput { Bytes = blockStream.Current });
+            await call.RequestStream.WriteAsync(new ByteArray { Bytes = blockStream.Current });
         }
 
         await call.RequestStream.CompleteAsync();

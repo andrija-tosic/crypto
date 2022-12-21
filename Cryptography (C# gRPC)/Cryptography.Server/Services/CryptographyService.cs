@@ -4,7 +4,7 @@ namespace Cryptography.Server.Services
 {
     public class CryptographyService : Cryptography.CryptographyBase
     {
-        public override async Task<SHA1HashResult> ComputeSHA1Hash(IAsyncStreamReader<SHA1BytesInput> requestStream, ServerCallContext context)
+        public override async Task<SHA1HashResult> ComputeSHA1Hash(IAsyncStreamReader<ByteArray> requestStream, ServerCallContext context)
         {
             using var sha1 = new SHA1();
 
