@@ -1,4 +1,4 @@
-﻿namespace Cryptography.Server;
+﻿namespace Cryptography.Ciphers;
 
 using System.Linq;
 using System.Text;

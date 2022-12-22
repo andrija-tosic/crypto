@@ -1,7 +1,5 @@
-﻿using System.Runtime.InteropServices;
-
-namespace Cryptography.Server;
-struct BMPFileHeader
+﻿namespace Cryptography.Ciphers;
+public struct BMPFileHeader
 {
     byte[] header = new byte[2];
     uint sizeBytes;
@@ -24,12 +22,12 @@ struct BMPFileHeader
     }
 }
 
-public class BMPCryptography : IDisposable
+public class BMPCipher : IDisposable
 {
     readonly int BUF_SIZE;
     OneTimePad otp;
 
-    public BMPCryptography(int bufSize)
+    public BMPCipher(int bufSize)
     {
         BUF_SIZE = bufSize;
         otp = new OneTimePad();
@@ -39,13 +37,6 @@ public class BMPCryptography : IDisposable
     {
         return otp.Encrypt(ref data);
     }
-    public static void ByteArrayToStruct<T>(T header, byte[] headerBytes)
-    {
-        GCHandle handle = GCHandle.Alloc(headerBytes, GCHandleType.Pinned);
-        Marshal.PtrToStructure(handle.AddrOfPinnedObject(), header);
-        handle.Free();
-    }
-
     public void DecryptOneTimePad(byte[] data, byte[] pad)
     {
         otp.Decrypt(ref data, pad);

@@ -1,4 +1,4 @@
-﻿namespace Cryptography.Server;
+﻿namespace Cryptography.Ciphers;
 public class OFBBlockCipher : IDisposable
 {
     private readonly IBlockCipher blockCipher;

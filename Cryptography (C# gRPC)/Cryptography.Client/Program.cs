@@ -12,6 +12,7 @@ string resourcesPath = "D:\\Desktop\\crypt\\Cryptography (C# gRPC)\\Cryptography
 var sha1Result = await RPC.SHA1HashFileAsync(client, resourcesPath + "bmp_otp_example.bmp");
 Console.WriteLine(sha1Result.Hash);
 
+
 await RPC.EncryptBMPFileAsync(client,
     resourcesPath + "bmp_otp_example.bmp",
     resourcesPath + "bmp_otp_example.pad",
@@ -76,6 +77,7 @@ await RPC.DecryptXXTEAOFBAsync(client,
     "12345678",
     "12345678"
     );
+
 
 await RPC.EncryptXXTEAAsync(client,
     resourcesPath + "xxtea_example.jpg",

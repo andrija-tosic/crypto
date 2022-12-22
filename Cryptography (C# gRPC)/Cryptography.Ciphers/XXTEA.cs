@@ -1,4 +1,4 @@
-﻿namespace Cryptography.Server;
+﻿namespace Cryptography.Ciphers;
 public class XXTEA : IBlockCipher
 {
     private const uint Delta = 0x9E3779B9;
@@ -22,6 +22,27 @@ public class XXTEA : IBlockCipher
 
         return ToByteArray(Decrypt(ToUInt32Array(data), ToUInt32Array(key)));
     }
+
+    public void EncryptRef(ref byte[] data, byte[] key)
+    {
+        if (data.Length == 0)
+        {
+            return;
+        }
+
+        data = ToByteArray(Encrypt(ToUInt32Array(data), ToUInt32Array(key)));
+    }
+
+    public void DecryptRef(ref byte[] data, byte[] key)
+    {
+        if (data.Length == 0)
+        {
+            return;
+        }
+
+        data = ToByteArray(Decrypt(ToUInt32Array(data), ToUInt32Array(key)));
+    }
+
 
     private static uint[] Encrypt(uint[] v, uint[] k)
     {
@@ -105,31 +126,47 @@ public class XXTEA : IBlockCipher
     public byte[] EncryptParallel(byte[] data, byte[] key, int numThreads)
     {
         byte[][] blocks = SplitIntoBlocks(data, numThreads);
-        byte[][] encryptedBlocks = new byte[blocks.Length][];
 
-        Parallel.ForEach(blocks, (block, state, index) =>
+        List<Thread> threads = new List<Thread>();
+
+        for (int i = 0; i < blocks.Length; i++)
         {
-            byte[] encryptedBlock = Encrypt(block, key);
+            int blockIndex = i;
+            Thread thread = new Thread(() => EncryptRef(ref blocks[blockIndex], key));
 
-            encryptedBlocks[index] = encryptedBlock;
-        });
+            thread.Start();
+            threads.Add(thread);
+        }
 
-        return JoinBlocks(encryptedBlocks);
+        foreach (Thread thread in threads)
+        {
+            thread.Join();
+        }
+
+        return JoinBlocks(blocks);
     }
 
     public byte[] DecryptParallel(byte[] data, byte[] key, int numThreads)
     {
         byte[][] blocks = SplitIntoBlocks(data, numThreads);
-        byte[][] decryptedBlocks = new byte[blocks.Length][];
 
-        Parallel.ForEach(blocks, (block, state, index) =>
+        List<Thread> threads = new List<Thread>();
+
+        for (int i = 0; i < blocks.Length; i++)
         {
-            byte[] decryptedBlock = Decrypt(block, key);
+            int blockIndex = i;
+            Thread thread = new Thread(() => DecryptRef(ref blocks[blockIndex], key));
 
-            decryptedBlocks[index] = decryptedBlock;
-        });
+            thread.Start();
+            threads.Add(thread);
+        }
 
-        return JoinBlocks(decryptedBlocks);
+        foreach (Thread thread in threads)
+        {
+            thread.Join();
+        }
+
+        return JoinBlocks(blocks);
     }
 
     static byte[][] SplitIntoBlocks(byte[] data, int numBlocks)

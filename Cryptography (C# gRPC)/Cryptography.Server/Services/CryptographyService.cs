@@ -2,6 +2,8 @@ using Google.Protobuf;
 using Grpc.Core;
 using System.Text;
 
+using Cryptography.Ciphers;
+
 namespace Cryptography.Server.Services;
 
 public class CryptographyService : Cryptography.CryptographyBase
@@ -21,7 +23,7 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task EncryptBMP(IAsyncStreamReader<ByteArray> requestStream, IServerStreamWriter<OneTimePadResult> responseStream, ServerCallContext context)
     {
-        using var BMPCryptography = new BMPCryptography(BUF_SIZE);
+        using var BMPCryptography = new BMPCipher(BUF_SIZE);
 
         /* Skip encrypting BMP header. */
 
@@ -54,7 +56,7 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task DecryptBMP(IAsyncStreamReader<OneTimePadResult> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
     {
-        using var BMPCryptography = new BMPCryptography(BUF_SIZE);
+        using var BMPCryptography = new BMPCipher(BUF_SIZE);
 
         /* Skip decrypting BMP header. */
 

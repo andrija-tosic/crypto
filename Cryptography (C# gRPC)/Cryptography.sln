@@ -5,7 +5,9 @@ VisualStudioVersion = 17.4.33205.214
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cryptography.Server", "Cryptography.Server\Cryptography.Server.csproj", "{8DB7BE8A-60EB-418A-A8E5-5F4A952845C0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cryptography.Client", "Cryptography.Client\Cryptography.Client.csproj", "{11E4F9E6-8E70-4C8D-B784-EDDCF450A62A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cryptography.Client", "Cryptography.Client\Cryptography.Client.csproj", "{11E4F9E6-8E70-4C8D-B784-EDDCF450A62A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cryptography.Ciphers", "Cryptography.Ciphers\Cryptography.Ciphers.csproj", "{DA538AAD-67D1-4DC1-B3B5-162E1BB8864E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{11E4F9E6-8E70-4C8D-B784-EDDCF450A62A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{11E4F9E6-8E70-4C8D-B784-EDDCF450A62A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{11E4F9E6-8E70-4C8D-B784-EDDCF450A62A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA538AAD-67D1-4DC1-B3B5-162E1BB8864E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA538AAD-67D1-4DC1-B3B5-162E1BB8864E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA538AAD-67D1-4DC1-B3B5-162E1BB8864E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA538AAD-67D1-4DC1-B3B5-162E1BB8864E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

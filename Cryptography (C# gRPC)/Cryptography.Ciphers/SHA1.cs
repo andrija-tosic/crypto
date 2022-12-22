@@ -1,12 +1,10 @@
-﻿using Grpc.Core;
-using System;
-using System.Diagnostics;
+﻿namespace Cryptography.Ciphers;
 
-namespace Cryptography.Server;
 /*
 RFC 3174
 https://www.rfc-editor.org/rfc/rfc3174
 */
+
 public class SHA1 : IDisposable
 {
     /* Digest. */
