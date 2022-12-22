@@ -8,14 +8,14 @@ service Cryptography {
   rpc EncryptOneTimePad(stream ByteArray) returns (stream OneTimePadResult);
   rpc DecryptOneTimePad(stream OneTimePadResult) returns (stream ByteArray);
 
-  rpc EncryptBMP(stream ByteArray) returns (stream ByteArray);
-  rpc DecryptBMP(stream ByteArray) returns (stream ByteArray);
+  rpc EncryptBMP(stream ByteArray) returns (stream OneTimePadResult);
+  rpc DecryptBMP(stream OneTimePadResult) returns (stream ByteArray);
 
   rpc EncryptXXTEA(stream XXTEARequest) returns (stream ByteArray);
   rpc DecryptXXTEA(stream XXTEARequest) returns (stream ByteArray);
 
-  rpc EncryptFourSquareCipher(stream FourSquareCipherText) returns (stream FourSquareCipherText);
-  rpc DecryptFourSquareCipher(stream FourSquareCipherText) returns (stream FourSquareCipherText);
+  rpc EncryptFourSquareCipher(stream FourSquareCipherRequest) returns (stream FourSquareCipherResponse);
+  rpc DecryptFourSquareCipher(stream FourSquareCipherRequest) returns (stream FourSquareCipherResponse);
 
   rpc EncryptOneTimePadOFB(stream ByteArray) returns (stream OneTimePadResult);
   rpc DecryptOneTimePadOFB(stream OneTimePadResult) returns (stream ByteArray);
@@ -28,7 +28,13 @@ message ByteArray {
 	bytes bytes = 1;
 }
 
-message FourSquareCipherText {
+message FourSquareCipherRequest {
+	string text = 1;
+	string key1 = 2;
+	string key2 = 3;
+}
+
+message FourSquareCipherResponse {
 	string text = 1;
 }
 
@@ -37,11 +43,11 @@ message SHA1HashResult {
 }
 
 message OneTimePadResult {
-	ByteArray encrpyted_file = 1;
-	ByteArray pad = 2;
+	bytes encrpyted_bytes = 1;
+	bytes pad = 2;
 }
 
 message XXTEARequest {
-	ByteArray file = 1;
+	bytes file = 1;
 	string key = 2;
 }

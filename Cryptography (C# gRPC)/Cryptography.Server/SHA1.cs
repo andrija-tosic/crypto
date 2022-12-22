@@ -156,7 +156,7 @@ public class SHA1 : IDisposable
 
         /*
             Check to see if the current message block is too small to hold
-            the initial padding bits and length.  If so, we will pad the
+            the initial padding bits and length.  If so, we will _pad the
             block, process it, and then continue padding into a second
             block.
         */
