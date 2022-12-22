@@ -1,6 +1,6 @@
 ﻿using Google.Protobuf;
 using Grpc.Core;
-using System;
+using System.Text;
 
 namespace Cryptography.Client;
 
@@ -270,4 +270,147 @@ class RPC
         await response;
     }
 
+    public static async Task EncryptXXTEAAsync(Cryptography.CryptographyClient client, string inFilePath, string outFilePath, string key, bool parallelize)
+    {
+        using FileStream inFileStream = File.OpenRead(inFilePath);
+        using FileStream outFileStream = File.OpenWrite(outFilePath);
+
+        
+        using var streamingCall = parallelize ? client.EncryptXXTEAParallel() : client.EncryptXXTEA();
+
+        var response = Task.Run(async () =>
+        {
+            while (await streamingCall.ResponseStream.MoveNext())
+            {
+                outFileStream.Write(streamingCall.ResponseStream.Current.Bytes.Span);
+            }
+        });
+
+        await streamingCall.RequestStream.WriteAsync(new XXTEARequest
+        {
+            Key = key
+        });
+
+        byte[] inBuffer = new byte[4096];
+
+
+        while (inFileStream.Read(inBuffer) > 0)
+        {
+            await streamingCall.RequestStream.WriteAsync(new XXTEARequest
+            {
+                Bytes = ByteString.CopyFrom(inBuffer)
+            });
+        }
+
+        await streamingCall.RequestStream.CompleteAsync();
+        await response;
+    }
+
+    public static async Task DecryptXXTEAAsync(Cryptography.CryptographyClient client, string inFilePath, string outFilePath, string key, bool parallelize)
+    {
+        using FileStream inFileStream = File.OpenRead(inFilePath);
+        using FileStream outFileStream = File.OpenWrite(outFilePath);
+
+        using var streamingCall = parallelize ? client.DecryptXXTEAParallel() : client.DecryptXXTEA();
+
+        var response = Task.Run(async () =>
+        {
+            while (await streamingCall.ResponseStream.MoveNext())
+            {
+                outFileStream.Write(streamingCall.ResponseStream.Current.Bytes.Span);
+            }
+        });
+
+        await streamingCall.RequestStream.WriteAsync(new XXTEARequest
+        {
+            Key = key
+        });
+
+        byte[] inBuffer = new byte[4096];
+
+        while (inFileStream.Read(inBuffer) > 0)
+        {
+            await streamingCall.RequestStream.WriteAsync(new XXTEARequest
+            {
+                Bytes = ByteString.CopyFrom(inBuffer)
+            });
+        }
+
+        await streamingCall.RequestStream.CompleteAsync();
+        await response;
+    }
+
+    public static async Task EncryptXXTEAOFBAsync(Cryptography.CryptographyClient client, string inFilePath, string outFilePath, string key, string IV)
+    {
+        using FileStream inFileStream = File.OpenRead(inFilePath);
+        using FileStream outFileStream = File.OpenWrite(outFilePath);
+
+        using var streamingCall = client.EncryptXXTEAOFB();
+
+        byte[] IVbytes = Encoding.ASCII.GetBytes(IV);
+
+        var response = Task.Run(async () =>
+        {
+            while (await streamingCall.ResponseStream.MoveNext())
+            {
+                outFileStream.Write(streamingCall.ResponseStream.Current.Bytes.Span);
+            }
+        });
+
+        await streamingCall.RequestStream.WriteAsync(new XXTEAOFBRequest
+        {
+            Key = key,
+            IV = ByteString.CopyFrom(IVbytes)
+        });
+
+        byte[] inBuffer = new byte[IVbytes.Length];
+
+        while (inFileStream.Read(inBuffer) > 0)
+        {
+            await streamingCall.RequestStream.WriteAsync(new XXTEAOFBRequest
+            {
+                Bytes = ByteString.CopyFrom(inBuffer)
+            });
+        }
+
+        await streamingCall.RequestStream.CompleteAsync();
+        await response;
+    }
+
+    public static async Task DecryptXXTEAOFBAsync(Cryptography.CryptographyClient client, string inFilePath, string outFilePath, string key, string IV)
+    {
+        using FileStream inFileStream = File.OpenRead(inFilePath);
+        using FileStream outFileStream = File.OpenWrite(outFilePath);
+
+        using var streamingCall = client.DecryptXXTEAOFB();
+
+        byte[] IVbytes = Encoding.ASCII.GetBytes(IV);
+
+        var response = Task.Run(async () =>
+        {
+            while (await streamingCall.ResponseStream.MoveNext())
+            {
+                outFileStream.Write(streamingCall.ResponseStream.Current.Bytes.Span);
+            }
+        });
+
+        await streamingCall.RequestStream.WriteAsync(new XXTEAOFBRequest
+        {
+            Key = key,
+            IV = ByteString.CopyFrom(IVbytes)
+        });
+
+        byte[] inBuffer = new byte[IVbytes.Length];
+
+        while (inFileStream.Read(inBuffer) > 0)
+        {
+            await streamingCall.RequestStream.WriteAsync(new XXTEAOFBRequest
+            {
+                Bytes = ByteString.CopyFrom(inBuffer)
+            });
+        }
+
+        await streamingCall.RequestStream.CompleteAsync();
+        await response;
+    }
 }
