@@ -10,18 +10,18 @@ public class OFBBlockCipher : IDisposable
     {
         this.blockCipher = blockCipher;
         this.key = key;
-        outputFeedback = (byte[])IV.Clone();
+        this.outputFeedback = (byte[])IV.Clone();
     }
 
     public byte[] Encrypt(byte[] plaintext)
     {
-        outputFeedback = blockCipher.Encrypt(outputFeedback, key);
+        this.outputFeedback = this.blockCipher.Encrypt(this.outputFeedback);
 
         byte[] ciphertext = new byte[plaintext.Length];
 
         for (int i = 0; i < plaintext.Length; i++)
         {
-            ciphertext[i] = (byte)(plaintext[i] ^ outputFeedback[i]);
+            ciphertext[i] = (byte)(plaintext[i] ^ this.outputFeedback[i]);
         }
 
         return ciphertext;
@@ -29,8 +29,9 @@ public class OFBBlockCipher : IDisposable
 
     public byte[] Decrypt(byte[] plaintext)
     {
-        return Encrypt(plaintext);
+        return this.Encrypt(plaintext);
     }
+
     public void Dispose()
     {
         GC.SuppressFinalize(this);

@@ -10,10 +10,10 @@ https://www.rfc-editor.org/rfc/rfc3174
 
 public class SHA1 : IDisposable
 {
-    List<byte> lastBlockBuffer = new List<byte>((int)BlockBytes);
+    private List<byte> lastBlockBuffer = new((int)BlockBytes);
 
     /* Digest. */
-    readonly uint[] H = new uint[5]
+    private readonly uint[] H = new uint[5]
     {
         0x67452301,
         0xEFCDAB89,
@@ -21,17 +21,15 @@ public class SHA1 : IDisposable
         0x10325476,
         0xC3D2E1F0
     };
-
-    ulong l = 0;
-
-    const uint WordsPerBlock = 16; // Word = 32-bit.
-    const uint BlockBytes = WordsPerBlock * 4;
+    private ulong l = 0;
+    private const uint WordsPerBlock = 16; // Word = 32-bit.
+    private const uint BlockBytes = WordsPerBlock * 4;
 
     /*
         A sequence of constant words K(0), K(1), ... , K(79) is used in the
         SHA-1.  In hex these are given by
     */
-    static readonly uint[] K = new uint[80] {
+    private static readonly uint[] K = new uint[80] {
         0x5A827999,0x5A827999,0x5A827999,0x5A827999,0x5A827999,0x5A827999,0x5A827999,0x5A827999,0x5A827999,0x5A827999,
         0x5A827999,0x5A827999,0x5A827999,0x5A827999,0x5A827999,0x5A827999,0x5A827999,0x5A827999,0x5A827999,0x5A827999,
 
@@ -51,23 +49,26 @@ public class SHA1 : IDisposable
 		 D and produces a 32-bit word as output.  f(t;B,C,D) is defined as
 		 follows: for words B, C, D,
 	*/
-    static uint FF(int t, uint B, uint C, uint D)
+    private static uint FF(int t, uint B, uint C, uint D)
     {
-        if (t >= 0 && t <= 19)
+        if (t is >= 0 and <= 19)
         {
             return (B & C) | ((~B) & D);
         }
-        else if (t >= 20 && t <= 39 || t >= 60 && t <= 79)
+        else
         {
-            return B ^ C ^ D;
-        }
-        else // if (t >= 40 && t <= 59)
-        {
-            return (B & C) | (B & D) | (C & D);
+            if (t is >= 20 and <= 39 or >= 60 and <= 79)
+            {
+                return B ^ C ^ D;
+            }
+            else
+            {
+                return (B & C) | (B & D) | (C & D);
+            }
         }
     }
 
-    static uint CircularLeftShift(int n, uint X)
+    private static uint CircularLeftShift(int n, uint X)
     {
         return (X << n) | (X >> (32 - n));
     }
@@ -78,76 +79,90 @@ public class SHA1 : IDisposable
 
         for (int i = 0; i < blocks.Length; i++)
         {
-            Debug.Assert(blocks[i].Length == BlockBytes);
-     
-            lastBlockBuffer = blocks[i].ToList();
-            HashBlock(lastBlockBuffer);
+            this.lastBlockBuffer = blocks[i].ToList();
+
+            this.l += (ulong)blocks[i].Length;
+
+            if (blocks[i].Length < BlockBytes)
+            {
+                break;
+            }
+
+            this.HashBlock(this.lastBlockBuffer);
         }
     }
 
     public void Finish()
     {
-        if (lastBlockBuffer.Count == (int)BlockBytes)
+        if (this.lastBlockBuffer.Count == (int)BlockBytes)
         {
-            lastBlockBuffer.Clear();
+            this.lastBlockBuffer.Clear();
         }
 
-        FinalPadMessage(lastBlockBuffer);
+        this.FinalPadMessage(this.lastBlockBuffer);
     }
 
     public string HashHexString
     {
         get
         {
-            var result = new StringBuilder();
-            result.AppendFormat("{0:x8}", H[0]);
-            result.AppendFormat("{0:x8}", H[1]);
-            result.AppendFormat("{0:x8}", H[2]);
-            result.AppendFormat("{0:x8}", H[3]);
-            result.AppendFormat("{0:x8}", H[4]);
+            StringBuilder result = new();
+            _ = result.AppendFormat("{0:x8}", this.H[0]);
+            _ = result.AppendFormat("{0:x8}", this.H[1]);
+            _ = result.AppendFormat("{0:x8}", this.H[2]);
+            _ = result.AppendFormat("{0:x8}", this.H[3]);
+            _ = result.AppendFormat("{0:x8}", this.H[4]);
             return result.ToString();
         }
     }
 
-    void HashBlock(List<byte> block)
+    private void HashBlock(List<byte> block)
     {
+        Debug.Assert(block.Count == BlockBytes);
+
         /* a. */
         uint[] W = new uint[80];
 
         int t;
 
         for (t = 0; t < 16; t++)
+        {
             W[t] = (uint)((block[t * 4] & 0xff) << 24)
             | (uint)((block[t * 4 + 1] & 0xff) << 16)
             | (uint)((block[t * 4 + 2] & 0xff) << 8)
             | (uint)((block[t * 4 + 3] & 0xff) << 0);
+        }
 
         /* b. */
         for (t = 16; t < 80; t++)
+        {
             W[t] = CircularLeftShift(1, W[t - 3] ^ W[t - 8] ^ W[t - 14] ^ W[t - 16]);
+        }
 
         /* c. */
-        uint A = H[0], B = H[1], C = H[2], D = H[3], E = H[4];
+        uint A = this.H[0], B = this.H[1], C = this.H[2], D = this.H[3], E = this.H[4];
 
         /* d. */
         for (t = 0; t < 80; t++)
         {
             uint TEMP = CircularLeftShift(5, A) + FF(t, B, C, D) + E + W[t] + K[t];
 
-            E = D; D = C; C = CircularLeftShift(30, B); B = A; A = TEMP;
+            E = D;
+            D = C;
+            C = CircularLeftShift(30, B);
+            B = A;
+            A = TEMP;
         }
 
         /* e. */
-        H[0] += A;
-        H[1] += B;
-        H[2] += C;
-        H[3] += D;
-        H[4] += E;
-
-        l += BlockBytes;
+        this.H[0] += A;
+        this.H[1] += B;
+        this.H[2] += C;
+        this.H[3] += D;
+        this.H[4] += E;
     }
 
-    void FinalPadMessage(List<byte> message)
+    private void FinalPadMessage(List<byte> message)
     {
         int spaceForLengthAppend = 2 * sizeof(uint);
 
@@ -170,7 +185,7 @@ public class SHA1 : IDisposable
                 message.Add(0x00);
             }
 
-            HashBlock(message);
+            this.HashBlock(message);
 
             /* Processing final block. Vector is 64 bytes at this point. */
             message.RemoveRange((int)BlockBytes - spaceForLengthAppend, message.Count - ((int)BlockBytes - spaceForLengthAppend));
@@ -200,10 +215,10 @@ public class SHA1 : IDisposable
             Append these two words to the padded message.
         */
 
-        l *= 8; /* Convert l from bytes to bits. */
+        this.l *= 8; /* Convert l from bytes to bits. */
 
-        uint lengthHigh = (uint)(l >> 32);
-        uint lengthLow = (uint)l;
+        uint lengthHigh = (uint)(this.l >> 32);
+        uint lengthLow = (uint)this.l;
 
         message.Add((byte)(lengthHigh >> 24));
         message.Add((byte)(lengthHigh >> 16));
@@ -215,7 +230,7 @@ public class SHA1 : IDisposable
         message.Add((byte)(lengthLow >> 8));
         message.Add((byte)lengthLow);
 
-        HashBlock(message);
+        this.HashBlock(message);
     }
 
     public void Dispose()

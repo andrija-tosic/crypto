@@ -1,9 +1,8 @@
+using Cryptography.Ciphers;
 using Google.Protobuf;
 using Grpc.Core;
-using System.Text;
-
-using Cryptography.Ciphers;
 using System.Diagnostics;
+using System.Text;
 
 namespace Cryptography.Server.Services;
 
@@ -11,7 +10,7 @@ public class CryptographyService : Cryptography.CryptographyBase
 {
     public override async Task<SHA1HashResult> ComputeSHA1Hash(IAsyncStreamReader<ByteArray> requestStream, ServerCallContext context)
     {
-        using var sha1 = new SHA1();
+        using SHA1 sha1 = new();
 
         while (await requestStream.MoveNext())
         {
@@ -25,15 +24,15 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task EncryptBMP(IAsyncStreamReader<ByteArray> requestStream, IServerStreamWriter<OneTimePadResult> responseStream, ServerCallContext context)
     {
-        using var BMPCryptography = new BMPCipher();
+        using BMPCipher BMPCryptography = new();
 
         /* Skip encrypting BMP header. */
 
-        await requestStream.MoveNext();
+        _ = await requestStream.MoveNext();
 
-        var headerBytes = requestStream.Current.Bytes.ToByteArray();
+        byte[] headerBytes = requestStream.Current.Bytes.ToByteArray();
 
-        var headerResult = new OneTimePadResult
+        OneTimePadResult headerResult = new()
         {
             EncrpytedBytes = ByteString.CopyFrom(headerBytes),
             Pad = ByteString.CopyFrom(new byte[headerBytes.Length])
@@ -46,7 +45,7 @@ public class CryptographyService : Cryptography.CryptographyBase
             byte[] toEncrypt = requestStream.Current.Bytes.ToByteArray();
             byte[] pad = BMPCryptography.EncryptOneTimePad(toEncrypt);
 
-            var res = new OneTimePadResult
+            OneTimePadResult res = new()
             {
                 EncrpytedBytes = ByteString.CopyFrom(toEncrypt),
                 Pad = ByteString.CopyFrom(pad)
@@ -58,15 +57,15 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task DecryptBMP(IAsyncStreamReader<OneTimePadResult> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
     {
-        using var BMPCryptography = new BMPCipher();
+        using BMPCipher BMPCryptography = new();
 
         /* Skip decrypting BMP header. */
 
-        await requestStream.MoveNext();
+        _ = await requestStream.MoveNext();
 
-        var headerBytes = requestStream.Current.EncrpytedBytes.ToByteArray();
+        byte[] headerBytes = requestStream.Current.EncrpytedBytes.ToByteArray();
 
-        var headerResult = new ByteArray
+        ByteArray headerResult = new()
         {
             Bytes = ByteString.CopyFrom(headerBytes)
         };
@@ -78,10 +77,9 @@ public class CryptographyService : Cryptography.CryptographyBase
             byte[] toDecrypt = requestStream.Current.EncrpytedBytes.ToByteArray();
             byte[] padToDecryptWith = requestStream.Current.Pad.ToByteArray();
 
-
             BMPCryptography.DecryptOneTimePad(toDecrypt, padToDecryptWith);
 
-            var res = new ByteArray
+            ByteArray res = new()
             {
                 Bytes = ByteString.CopyFrom(toDecrypt)
             };
@@ -92,14 +90,14 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task EncryptOneTimePad(IAsyncStreamReader<ByteArray> requestStream, IServerStreamWriter<OneTimePadResult> responseStream, ServerCallContext context)
     {
-        var otp = new OneTimePad();
+        OneTimePad otp = new();
 
         while (await requestStream.MoveNext())
         {
             byte[] toEncrypt = requestStream.Current.Bytes.ToByteArray();
             byte[] pad = otp.Encrypt(ref toEncrypt);
 
-            var res = new OneTimePadResult
+            OneTimePadResult res = new()
             {
                 EncrpytedBytes = ByteString.CopyFrom(toEncrypt),
                 Pad = ByteString.CopyFrom(pad)
@@ -111,7 +109,7 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task DecryptOneTimePad(IAsyncStreamReader<OneTimePadResult> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
     {
-        var otp = new OneTimePad();
+        OneTimePad otp = new();
 
         while (await requestStream.MoveNext())
         {
@@ -122,7 +120,7 @@ public class CryptographyService : Cryptography.CryptographyBase
 
             Debug.Assert(toDecrypt.Length == padToDecryptWith.Length);
 
-            var res = new ByteArray
+            ByteArray res = new()
             {
                 Bytes = ByteString.CopyFrom(toDecrypt)
             };
@@ -133,18 +131,18 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task EncryptFourSquareCipher(IAsyncStreamReader<FourSquareCipherRequest> requestStream, IServerStreamWriter<FourSquareCipherResponse> responseStream, ServerCallContext context)
     {
-        await requestStream.MoveNext();
+        _ = await requestStream.MoveNext();
 
         string key1 = requestStream.Current.Key1;
         string key2 = requestStream.Current.Key2;
 
-        var fsc = new FourSquareCipher(key1, key2);
+        FourSquareCipher fsc = new(key1, key2);
 
         do
         {
             string encryptedText = fsc.EncryptText(requestStream.Current.Text);
 
-            var res = new FourSquareCipherResponse
+            FourSquareCipherResponse res = new()
             {
                 Text = encryptedText
             };
@@ -155,18 +153,18 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task DecryptFourSquareCipher(IAsyncStreamReader<FourSquareCipherRequest> requestStream, IServerStreamWriter<FourSquareCipherResponse> responseStream, ServerCallContext context)
     {
-        await requestStream.MoveNext();
+        _ = await requestStream.MoveNext();
 
         string key1 = requestStream.Current.Key1;
         string key2 = requestStream.Current.Key2;
 
-        var fsc = new FourSquareCipher(key1, key2);
+        FourSquareCipher fsc = new(key1, key2);
 
         do
         {
             string decryptedText = fsc.DecryptText(requestStream.Current.Text);
 
-            var res = new FourSquareCipherResponse
+            FourSquareCipherResponse res = new()
             {
                 Text = decryptedText
             };
@@ -177,17 +175,17 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task EncryptXXTEA(IAsyncStreamReader<XXTEARequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
     {
-        await requestStream.MoveNext();
+        _ = await requestStream.MoveNext();
 
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
-        var xxtea = new XXTEA();
+        XXTEA xxtea = new(key);
 
         do
         {
             byte[] toEncrypt = requestStream.Current.Bytes.ToByteArray();
-            byte[] encryptedBytes = xxtea.Encrypt(toEncrypt, key);
+            byte[] encryptedBytes = xxtea.Encrypt(toEncrypt);
 
-            var res = new ByteArray
+            ByteArray res = new()
             {
                 Bytes = ByteString.CopyFrom(encryptedBytes)
             };
@@ -198,17 +196,17 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task DecryptXXTEA(IAsyncStreamReader<XXTEARequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
     {
-        await requestStream.MoveNext();
+        _ = await requestStream.MoveNext();
 
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
-        var xxtea = new XXTEA();
+        XXTEA xxtea = new(key);
 
         do
         {
             byte[] toEncrypt = requestStream.Current.Bytes.ToByteArray();
-            byte[] encryptedBytes = xxtea.Decrypt(toEncrypt, key);
+            byte[] encryptedBytes = xxtea.Decrypt(toEncrypt);
 
-            var res = new ByteArray
+            ByteArray res = new()
             {
                 Bytes = ByteString.CopyFrom(encryptedBytes)
             };
@@ -219,19 +217,19 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task EncryptXXTEAOFB(IAsyncStreamReader<XXTEAOFBRequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
     {
-        await requestStream.MoveNext();
+        _ = await requestStream.MoveNext();
 
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
         byte[] IV = requestStream.Current.IV.ToByteArray();
 
-        using var xxteaOfb = new OFBBlockCipher(new XXTEA(), key, IV);
+        using OFBBlockCipher xxteaOfb = new(new XXTEA(key), key, IV);
 
         do
         {
             byte[] toEncrypt = requestStream.Current.Bytes.ToByteArray();
             byte[] encryptedBytes = xxteaOfb.Encrypt(toEncrypt);
 
-            var res = new ByteArray
+            ByteArray res = new()
             {
                 Bytes = ByteString.CopyFrom(encryptedBytes)
             };
@@ -242,19 +240,19 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task DecryptXXTEAOFB(IAsyncStreamReader<XXTEAOFBRequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
     {
-        await requestStream.MoveNext();
+        _ = await requestStream.MoveNext();
 
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
         byte[] IV = requestStream.Current.IV.ToByteArray();
 
-        using var xxteaOfb = new OFBBlockCipher(new XXTEA(), key, IV);
+        using OFBBlockCipher xxteaOfb = new(new XXTEA(key), key, IV);
 
         do
         {
             byte[] toDecrypt = requestStream.Current.Bytes.ToByteArray();
             byte[] encryptedBytes = xxteaOfb.Decrypt(toDecrypt);
 
-            var res = new ByteArray
+            ByteArray res = new()
             {
                 Bytes = ByteString.CopyFrom(encryptedBytes)
             };
@@ -265,19 +263,19 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task EncryptXXTEAParallel(IAsyncStreamReader<XXTEAParallelRequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
     {
-        await requestStream.MoveNext();
+        _ = await requestStream.MoveNext();
 
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
         int threadCount = requestStream.Current.ThreadCount;
 
-        var xxtea = new XXTEA();
+        XXTEA xxtea = new(key);
 
         do
         {
             byte[] toEncrypt = requestStream.Current.Bytes.ToByteArray();
-            byte[] encryptedBytes = XXTEA.EncryptParallel(toEncrypt, key, threadCount);
+            byte[] encryptedBytes = xxtea.EncryptParallel(toEncrypt, threadCount);
 
-            var res = new ByteArray
+            ByteArray res = new()
             {
                 Bytes = ByteString.CopyFrom(encryptedBytes)
             };
@@ -289,19 +287,19 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task DecryptXXTEAParallel(IAsyncStreamReader<XXTEAParallelRequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
     {
-        await requestStream.MoveNext();
+        _ = await requestStream.MoveNext();
 
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
         int threadCount = requestStream.Current.ThreadCount;
 
-        var xxtea = new XXTEA();
+        XXTEA xxtea = new(key);
 
         do
         {
             byte[] toDecrypt = requestStream.Current.Bytes.ToByteArray();
-            byte[] decryptedBytes = XXTEA.DecryptParallel(toDecrypt, key, threadCount);
+            byte[] decryptedBytes = xxtea.DecryptParallel(toDecrypt, threadCount);
 
-            var res = new ByteArray
+            ByteArray res = new()
             {
                 Bytes = ByteString.CopyFrom(decryptedBytes)
             };

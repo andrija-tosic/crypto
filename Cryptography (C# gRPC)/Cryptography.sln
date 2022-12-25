@@ -7,7 +7,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cryptography.Server", "Cryp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cryptography.Client", "Cryptography.Client\Cryptography.Client.csproj", "{11E4F9E6-8E70-4C8D-B784-EDDCF450A62A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cryptography.Ciphers", "Cryptography.Ciphers\Cryptography.Ciphers.csproj", "{DA538AAD-67D1-4DC1-B3B5-162E1BB8864E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cryptography.Ciphers", "Cryptography.Ciphers\Cryptography.Ciphers.csproj", "{DA538AAD-67D1-4DC1-B3B5-162E1BB8864E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{45FDF107-D4EB-4B19-AC3E-ECC20B05E346}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

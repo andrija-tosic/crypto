@@ -1,21 +1,20 @@
 ﻿namespace Cryptography.Ciphers;
-public struct BMPFileHeader
+public readonly struct BMPFileHeader
 {
-    byte[] header = new byte[2];
-    uint sizeBytes;
-    ushort reserved1, reserved2;
-    uint startingAddress;
-
-    uint dibHeaderSize;
-    uint width;
-    uint height;
-    ushort planes, bitCount;
-    uint compression;
-    uint sizeImage;
-    uint xPixelsPerMeter;
-    uint yPixelsPerMeter;
-    uint clrUsed;
-    uint clrImportant;
+    private readonly byte[] header = new byte[2];
+    private readonly uint sizeBytes;
+    private readonly ushort reserved1, reserved2;
+    private readonly uint startingAddress;
+    private readonly uint dibHeaderSize;
+    private readonly uint width;
+    private readonly uint height;
+    private readonly ushort planes, bitCount;
+    private readonly uint compression;
+    private readonly uint sizeImage;
+    private readonly uint xPixelsPerMeter;
+    private readonly uint yPixelsPerMeter;
+    private readonly uint clrUsed;
+    private readonly uint clrImportant;
 
     public BMPFileHeader()
     {
@@ -24,20 +23,21 @@ public struct BMPFileHeader
 
 public class BMPCipher : IDisposable
 {
-    OneTimePad otp;
+    private readonly OneTimePad otp;
 
     public BMPCipher()
     {
-        otp = new OneTimePad();
+        this.otp = new OneTimePad();
     }
 
     public byte[] EncryptOneTimePad(byte[] data)
     {
-        return otp.Encrypt(ref data);
+        return this.otp.Encrypt(ref data);
     }
+
     public void DecryptOneTimePad(byte[] data, byte[] pad)
     {
-        otp.Decrypt(ref data, pad);
+        this.otp.Decrypt(ref data, pad);
     }
 
     public void Dispose()

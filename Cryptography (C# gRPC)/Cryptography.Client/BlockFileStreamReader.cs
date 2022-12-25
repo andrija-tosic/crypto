@@ -1,5 +1,4 @@
-﻿using Grpc.Core;
-using Google.Protobuf;
+﻿using Google.Protobuf;
 
 namespace Cryptography.Client;
 public class BlockFileStreamReader : IDisposable
@@ -10,32 +9,36 @@ public class BlockFileStreamReader : IDisposable
 
     public BlockFileStreamReader(string filePath, int blockSize)
     {
-        stream = File.OpenRead(filePath);
-        buffer = new byte[blockSize];
+        this.stream = File.OpenRead(filePath);
+        this.buffer = new byte[blockSize];
         this.blockSize = blockSize;
     }
 
     public async Task<bool> ReadBlock()
     {
-        int bytesRead = await stream.ReadAsync(buffer);
-        CurrentBlock = ByteString.CopyFrom(buffer, 0, bytesRead);
+        int bytesRead = await this.stream.ReadAsync(this.buffer);
+        this.CurrentBlock = ByteString.CopyFrom(this.buffer, 0, bytesRead);
         return bytesRead > 0;
     }
 
     public void Dispose()
     {
-        stream.Dispose();
+        this.stream.Dispose();
         GC.SuppressFinalize(this);
     }
 
     public ByteString CurrentBlock { get; private set; }
     public int BlockSize
     {
-        get => blockSize;
+        get
+        {
+            return this.blockSize;
+        }
+
         set
         {
-            Array.Resize(ref buffer, value);
-            blockSize = value;
+            Array.Resize(ref this.buffer, value);
+            this.blockSize = value;
         }
     }
 }

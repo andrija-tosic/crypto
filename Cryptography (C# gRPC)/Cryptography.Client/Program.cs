@@ -4,16 +4,16 @@ using Cryptography.Client;
 using Grpc.Net.Client;
 using System.Diagnostics;
 
-GrpcChannel channel = GrpcChannel.ForAddress($"http://localhost:5000", new GrpcChannelOptions
+var channel = GrpcChannel.ForAddress($"http://localhost:5000", new GrpcChannelOptions
 {
     MaxReceiveMessageSize = 16 * 1024 * 1024,
 });
 
-var client = new Cryptography.Cryptography.CryptographyClient(channel);
+Cryptography.Cryptography.CryptographyClient client = new(channel);
 
 string resourcesPath = "D:\\Desktop\\crypt\\Cryptography (C# gRPC)\\Cryptography.Client\\Resources\\";
 
-Stopwatch stopwatch = Stopwatch.StartNew();
+var stopwatch = Stopwatch.StartNew();
 
 SHA1HashResult sha1Result = await RPC.SHA1HashFileAsync(client, resourcesPath + "xxtea_parallel_example.zip");
 
@@ -21,7 +21,11 @@ Console.WriteLine(sha1Result.Hash);
 Console.WriteLine($"SHA1HashFileAsync done [{stopwatch.ElapsedMilliseconds} ms]");
 stopwatch.Restart();
 
-return;
+sha1Result = await RPC.SHA1HashFileAsync(client, resourcesPath + "bmp_otp_example.bmp");
+
+Console.WriteLine(sha1Result.Hash);
+Console.WriteLine($"SHA1HashFileAsync done [{stopwatch.ElapsedMilliseconds} ms]");
+stopwatch.Restart();
 
 await RPC.EncryptDecryptAndCheckSHA1Hash(Cipher.BMP, client, resourcesPath + "bmp_otp_example.bmp", "", "");
 await RPC.EncryptDecryptAndCheckSHA1Hash(Cipher.OneTimePad, client, resourcesPath + "otp_example.jpg", "", "");

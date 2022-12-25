@@ -1,5 +1,6 @@
-*.enc.*
-*.dec.*
+*_example.enc.*
+*_example.dec.*
+*_example.pad
 
 # Rider config files
 .idea/

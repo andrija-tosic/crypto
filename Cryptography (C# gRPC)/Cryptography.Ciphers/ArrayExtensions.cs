@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Cryptography.Ciphers;
+﻿namespace Cryptography.Ciphers;
 
 internal static class ArrayExtensions
 {
@@ -16,6 +14,7 @@ internal static class ArrayExtensions
             blocks[i] = new byte[length];
             Buffer.BlockCopy(data, offset, blocks[i], 0, length);
         }
+
         return blocks;
     }
 
@@ -100,6 +99,24 @@ internal static class ArrayExtensions
         }
 
         return data;
+    }
+
+    public static byte[] ToByteArray(this uint[] data)
+    {
+        byte[] byteArray = new byte[data.Length * sizeof(uint)];
+
+        Buffer.BlockCopy(data, 0, byteArray, 0, data.Length * sizeof(uint));
+
+        return byteArray;
+    }
+
+    public static uint[] ToUInt32Array(this byte[] data)
+    {
+        uint[] uintArray = new uint[(int)Math.Ceiling((double)data.Length / sizeof(uint))];
+
+        Buffer.BlockCopy(data, 0, uintArray, 0, data.Length);
+
+        return uintArray;
     }
 
 }

@@ -6,16 +6,16 @@ using System.Text;
 
 namespace Cryptography.Client;
 
-static class RPC
+internal static class RPC
 {
-    const int BufferSize = 1024 * 1024;
-    static readonly int ParallelThreadCount = Environment.ProcessorCount;
+    private const int BufferSize = 1024 * 1024;
+    private static readonly int ParallelThreadCount = Environment.ProcessorCount;
 
     public static async Task<SHA1HashResult> SHA1HashFileAsync(Cryptography.CryptographyClient client, string filePath)
     {
-        using var blockStream = new BlockFileStreamReader(filePath, BufferSize);
+        using BlockFileStreamReader blockStream = new(filePath, BufferSize);
 
-        var call = client.ComputeSHA1Hash();
+        AsyncClientStreamingCall<ByteArray, SHA1HashResult> call = client.ComputeSHA1Hash();
 
         while (await blockStream.ReadBlock())
         {
@@ -24,20 +24,21 @@ static class RPC
 
         await call.RequestStream.CompleteAsync();
 
-        var response = await call;
+        SHA1HashResult response = await call;
 
         return response;
     }
 
     public static async Task EncryptBMPFileAsync(Cryptography.CryptographyClient client, string inFilePath, string outPadFilePath, string outFilePath)
     {
-        using var inFileStream = new BlockFileStreamReader(inFilePath, 54);
+        using BlockFileStreamReader inFileStream = new(inFilePath, 54);
         using FileStream outFileStream = File.OpenWrite(outFilePath);
         using FileStream outPadFileStream = File.OpenWrite(outPadFilePath);
 
-        await inFileStream.ReadBlock();
+        /* Read BMP header. */
+        _ = await inFileStream.ReadBlock();
 
-        using var streamingCall = client.EncryptBMP();
+        using AsyncDuplexStreamingCall<ByteArray, OneTimePadResult> streamingCall = client.EncryptBMP();
 
         await streamingCall.RequestStream.WriteAsync(new ByteArray
         {
@@ -55,7 +56,6 @@ static class RPC
             }
         });
 
-
         while (await inFileStream.ReadBlock())
         {
             await streamingCall.RequestStream.WriteAsync(new ByteArray
@@ -70,19 +70,16 @@ static class RPC
 
     public static async Task DecryptBMPFileAsync(Cryptography.CryptographyClient client, string inFilePath, string inPadFilePath, string outFilePath)
     {
-        using var inFileStream = new BlockFileStreamReader(inFilePath, 54);
-        using var inPadFileStream = new BlockFileStreamReader(inPadFilePath, 54);
+        using BlockFileStreamReader inFileStream = new(inFilePath, 54);
+        using BlockFileStreamReader inPadFileStream = new(inPadFilePath, 54);
         using FileStream outFileStream = File.OpenWrite(outFilePath);
 
-        long fileSize = new FileInfo(inFilePath).Length;
-        int bufSize = (int)Math.Min(fileSize, BufferSize);
-
         /* Read BMP header. */
-        await inFileStream.ReadBlock();
+        _ = await inFileStream.ReadBlock();
 
-        using var streamingCall = client.DecryptBMP();
+        using AsyncDuplexStreamingCall<OneTimePadResult, ByteArray> streamingCall = client.DecryptBMP();
 
-        await inPadFileStream.ReadBlock();
+        _ = await inPadFileStream.ReadBlock();
 
         /* Write BMP header to stream. */
         await streamingCall.RequestStream.WriteAsync(new OneTimePadResult
@@ -118,11 +115,11 @@ static class RPC
 
     public static async Task EncryptOneTimePadAsync(Cryptography.CryptographyClient client, string inFilePath, string outPadFilePath, string outFilePath)
     {
-        using var inFileStream = new BlockFileStreamReader(inFilePath, BufferSize);
+        using BlockFileStreamReader inFileStream = new(inFilePath, BufferSize);
         using FileStream outFileStream = File.OpenWrite(outFilePath);
         using FileStream outPadFileStream = File.OpenWrite(outPadFilePath);
 
-        using var streamingCall = client.EncryptOneTimePad();
+        using AsyncDuplexStreamingCall<ByteArray, OneTimePadResult> streamingCall = client.EncryptOneTimePad();
 
         var response = Task.Run(async () =>
         {
@@ -147,11 +144,11 @@ static class RPC
 
     public static async Task DecryptOneTimePadAsync(Cryptography.CryptographyClient client, string inFilePath, string inPadFilePath, string outFilePath)
     {
-        using var inFileStream = new BlockFileStreamReader(inFilePath, BufferSize);
-        using var inPadFileStream = new BlockFileStreamReader(inPadFilePath, BufferSize);
-        using var outFileStream = File.OpenWrite(outFilePath);
+        using BlockFileStreamReader inFileStream = new(inFilePath, BufferSize);
+        using BlockFileStreamReader inPadFileStream = new(inPadFilePath, BufferSize);
+        using FileStream outFileStream = File.OpenWrite(outFilePath);
 
-        using var streamingCall = client.DecryptOneTimePad();
+        using AsyncDuplexStreamingCall<OneTimePadResult, ByteArray> streamingCall = client.DecryptOneTimePad();
 
         var response = Task.Run(async () =>
         {
@@ -179,7 +176,7 @@ static class RPC
         using StreamReader inFileStream = new(inFilePath);
         using StreamWriter outFileStream = new(outFilePath);
 
-        using var streamingCall = client.EncryptFourSquareCipher();
+        using AsyncDuplexStreamingCall<FourSquareCipherRequest, FourSquareCipherResponse> streamingCall = client.EncryptFourSquareCipher();
 
         var response = Task.Run(async () =>
         {
@@ -215,7 +212,7 @@ static class RPC
         using StreamReader inFileStream = new(inFilePath);
         using StreamWriter outFileStream = new(outFilePath);
 
-        using var streamingCall = client.DecryptFourSquareCipher();
+        using AsyncDuplexStreamingCall<FourSquareCipherRequest, FourSquareCipherResponse> streamingCall = client.DecryptFourSquareCipher();
 
         var response = Task.Run(async () =>
         {
@@ -248,12 +245,12 @@ static class RPC
 
     public static async Task EncryptXXTEAAsync(Cryptography.CryptographyClient client, string inFilePath, string outFilePath, string key, bool parallelize)
     {
-        using var inFileStream = new BlockFileStreamReader(inFilePath, parallelize ? ParallelThreadCount * BufferSize : BufferSize);
+        using BlockFileStreamReader inFileStream = new(inFilePath, parallelize ? ParallelThreadCount * BufferSize : BufferSize);
         using FileStream outFileStream = File.OpenWrite(outFilePath);
 
         if (parallelize)
         {
-            using var streamingCall = client.EncryptXXTEAParallel();
+            using AsyncDuplexStreamingCall<XXTEAParallelRequest, ByteArray> streamingCall = client.EncryptXXTEAParallel();
 
             var response = Task.Run(async () =>
             {
@@ -267,7 +264,6 @@ static class RPC
                 Key = key,
                 ThreadCount = ParallelThreadCount
             });
-
 
             while (await inFileStream.ReadBlock())
             {
@@ -292,7 +288,7 @@ static class RPC
         }
         else
         {
-            using var streamingCall = client.EncryptXXTEA();
+            using AsyncDuplexStreamingCall<XXTEARequest, ByteArray> streamingCall = client.EncryptXXTEA();
 
             var response = Task.Run(async () =>
             {
@@ -322,12 +318,12 @@ static class RPC
 
     public static async Task DecryptXXTEAAsync(Cryptography.CryptographyClient client, string inFilePath, string outFilePath, string key, bool parallelize)
     {
-        using var inFileStream = new BlockFileStreamReader(inFilePath, parallelize ? ParallelThreadCount * BufferSize : BufferSize);
+        using BlockFileStreamReader inFileStream = new(inFilePath, parallelize ? ParallelThreadCount * BufferSize : BufferSize);
         using FileStream outFileStream = File.OpenWrite(outFilePath);
 
         if (parallelize)
         {
-            using var streamingCall = client.DecryptXXTEAParallel();
+            using AsyncDuplexStreamingCall<XXTEAParallelRequest, ByteArray> streamingCall = client.DecryptXXTEAParallel();
             var response = Task.Run(async () =>
             {
                 while (await streamingCall.ResponseStream.MoveNext())
@@ -355,7 +351,7 @@ static class RPC
         }
         else
         {
-            using var streamingCall = client.DecryptXXTEA();
+            using AsyncDuplexStreamingCall<XXTEARequest, ByteArray> streamingCall = client.DecryptXXTEA();
             var response = Task.Run(async () =>
             {
                 while (await streamingCall.ResponseStream.MoveNext())
@@ -386,10 +382,10 @@ static class RPC
     {
         byte[] IVbytes = Encoding.ASCII.GetBytes(IV);
 
-        using var inFileStream = new BlockFileStreamReader(inFilePath, IVbytes.Length);
+        using BlockFileStreamReader inFileStream = new(inFilePath, IVbytes.Length);
         using FileStream outFileStream = File.OpenWrite(outFilePath);
 
-        using var streamingCall = client.EncryptXXTEAOFB();
+        using AsyncDuplexStreamingCall<XXTEAOFBRequest, ByteArray> streamingCall = client.EncryptXXTEAOFB();
 
         var response = Task.Run(async () =>
         {
@@ -421,11 +417,10 @@ static class RPC
     {
         byte[] IVbytes = Encoding.ASCII.GetBytes(IV);
 
-        using var inFileStream = new BlockFileStreamReader(inFilePath, IVbytes.Length);
+        using BlockFileStreamReader inFileStream = new(inFilePath, IVbytes.Length);
         using FileStream outFileStream = File.OpenWrite(outFilePath);
 
-        using var streamingCall = client.DecryptXXTEAOFB();
-
+        using AsyncDuplexStreamingCall<XXTEAOFBRequest, ByteArray> streamingCall = client.DecryptXXTEAOFB();
 
         var response = Task.Run(async () =>
         {
@@ -453,7 +448,7 @@ static class RPC
         await response;
     }
 
-    static string BytesToString(long byteCount)
+    private static string BytesToString(long byteCount)
     {
         string[] suf = { "B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB" };
 
@@ -484,7 +479,7 @@ static class RPC
 
         Console.WriteLine($"{BytesToString(fileSize)} file");
 
-        Stopwatch stopwatch = Stopwatch.StartNew();
+        var stopwatch = Stopwatch.StartNew();
 
         switch (cipher)
         {
@@ -552,8 +547,8 @@ static class RPC
         }
 
         stopwatch.Restart();
-        var sha1Before = await SHA1HashFileAsync(client, inFilePath);
-        var sha1After = await SHA1HashFileAsync(client, decryptedFilePath);
+        SHA1HashResult sha1Before = await SHA1HashFileAsync(client, inFilePath);
+        SHA1HashResult sha1After = await SHA1HashFileAsync(client, decryptedFilePath);
 
         if (sha1Before.Hash == sha1After.Hash)
         {
