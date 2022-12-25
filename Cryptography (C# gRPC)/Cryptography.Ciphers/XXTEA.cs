@@ -1,4 +1,6 @@
-﻿namespace Cryptography.Ciphers;
+﻿#define OPTIMIZED
+
+namespace Cryptography.Ciphers;
 public class XXTEA : IBlockCipher
 {
     private const uint Delta = 0x9E3779B9;
@@ -10,7 +12,10 @@ public class XXTEA : IBlockCipher
             return data;
         }
 
-        return ToByteArray(Encrypt(ToUInt32Array(data), ToUInt32Array(key)));
+        uint[] res = ToUInt32Array(data);
+        Encrypt(ref res, ToUInt32Array(key));
+
+        return ToByteArray(res);
     }
 
     public byte[] Decrypt(byte[] data, byte[] key)
@@ -20,36 +25,18 @@ public class XXTEA : IBlockCipher
             return data;
         }
 
-        return ToByteArray(Decrypt(ToUInt32Array(data), ToUInt32Array(key)));
+        uint[] res = ToUInt32Array(data);
+        Decrypt(ref res, ToUInt32Array(key));
+
+        return ToByteArray(res);
     }
 
-    public void EncryptRef(ref byte[] data, byte[] key)
-    {
-        if (data.Length == 0)
-        {
-            return;
-        }
-
-        data = ToByteArray(Encrypt(ToUInt32Array(data), ToUInt32Array(key)));
-    }
-
-    public void DecryptRef(ref byte[] data, byte[] key)
-    {
-        if (data.Length == 0)
-        {
-            return;
-        }
-
-        data = ToByteArray(Decrypt(ToUInt32Array(data), ToUInt32Array(key)));
-    }
-
-
-    private static uint[] Encrypt(uint[] v, uint[] k)
+    private static void Encrypt(ref uint[] v, uint[] k)
     {
         int n = v.Length - 1;
         if (n < 1)
         {
-            return v;
+            return;
         }
         if (k.Length < 4)
         {
@@ -71,15 +58,14 @@ public class XXTEA : IBlockCipher
             y = v[0];
             z = v[n] += (z >> 5 ^ y << 2) + (y >> 3 ^ z << 4) ^ (sum ^ y) + (k[p & 3 ^ e] ^ z);
         }
-        return v;
     }
 
-    private static uint[] Decrypt(uint[] v, uint[] k)
+    private static void Decrypt(ref uint[] v, uint[] k)
     {
         int n = v.Length - 1;
         if (n < 1)
         {
-            return v;
+            return;
         }
         if (k.Length < 4)
         {
@@ -102,7 +88,6 @@ public class XXTEA : IBlockCipher
             y = v[0] -= (z >> 5 ^ y << 2) + (y >> 3 ^ z << 4) ^ (sum ^ y) + (k[p & 3 ^ e] ^ z);
             sum -= Delta;
         }
-        return v;
     }
 
     private static byte[] ToByteArray(uint[] data)
@@ -116,26 +101,26 @@ public class XXTEA : IBlockCipher
 
     private static uint[] ToUInt32Array(byte[] data)
     {
-        uint[] uintArray = new uint[data.Length / sizeof(uint)];
+        uint[] uintArray = new uint[(int)Math.Ceiling((double)data.Length / sizeof(uint))];
 
         Buffer.BlockCopy(data, 0, uintArray, 0, data.Length);
 
         return uintArray;
     }
 
-    public byte[] EncryptParallel(byte[] data, byte[] key, int numThreads)
+    public static byte[] EncryptParallel(byte[] data, byte[] key, int numThreads)
     {
-        byte[][] blocks = SplitIntoBlocks(data, numThreads);
+        uint[][] blocks = data.SplitIntoNUInt32Blocks(numThreads);
 
-        List<Thread> threads = new List<Thread>();
+        uint[] keyUIntArray = ToUInt32Array(key);
+
+        Thread[] threads = new Thread[numThreads];
 
         for (int i = 0; i < blocks.Length; i++)
         {
             int blockIndex = i;
-            Thread thread = new Thread(() => EncryptRef(ref blocks[blockIndex], key));
-
-            thread.Start();
-            threads.Add(thread);
+            threads[i] = new Thread(() => Encrypt(ref blocks[blockIndex], keyUIntArray));
+            threads[i].Start();
         }
 
         foreach (Thread thread in threads)
@@ -143,22 +128,22 @@ public class XXTEA : IBlockCipher
             thread.Join();
         }
 
-        return JoinBlocks(blocks);
+        return blocks.JoinBlocks();
     }
 
-    public byte[] DecryptParallel(byte[] data, byte[] key, int numThreads)
+    public static byte[] DecryptParallel(byte[] data, byte[] key, int numThreads)
     {
-        byte[][] blocks = SplitIntoBlocks(data, numThreads);
+        uint[][] blocks = data.SplitIntoNUInt32Blocks(numThreads);
 
-        List<Thread> threads = new List<Thread>();
+        uint[] keyUIntArray = ToUInt32Array(key);
+
+        Thread[] threads = new Thread[numThreads];
 
         for (int i = 0; i < blocks.Length; i++)
         {
             int blockIndex = i;
-            Thread thread = new Thread(() => DecryptRef(ref blocks[blockIndex], key));
-
-            thread.Start();
-            threads.Add(thread);
+            threads[i] = new Thread(() => Decrypt(ref blocks[blockIndex], keyUIntArray));
+            threads[i].Start();
         }
 
         foreach (Thread thread in threads)
@@ -166,38 +151,6 @@ public class XXTEA : IBlockCipher
             thread.Join();
         }
 
-        return JoinBlocks(blocks);
-    }
-
-    static byte[][] SplitIntoBlocks(byte[] data, int numBlocks)
-    {
-        int blockSize = (int)Math.Ceiling((double)data.Length / numBlocks);
-        byte[][] blocks = new byte[numBlocks][];
-
-        for (int i = 0; i < numBlocks; i++)
-        {
-            int startIndex = i * blockSize;
-            int length = Math.Min(blockSize, data.Length - startIndex);
-            blocks[i] = new byte[length];
-            Array.Copy(data, startIndex, blocks[i], 0, length);
-        }
-
-        return blocks;
-    }
-
-    public static byte[] JoinBlocks(byte[][] blocks)
-    {
-        int totalSize = blocks.Sum(block => block.Length);
-
-        byte[] data = new byte[totalSize];
-
-        int offset = 0;
-        foreach (byte[] block in blocks)
-        {
-            Array.Copy(block, 0, data, offset, block.Length);
-            offset += block.Length;
-        }
-
-        return data;
+        return blocks.JoinBlocks();
     }
 }

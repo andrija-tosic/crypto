@@ -1,4 +1,7 @@
-﻿namespace Cryptography.Ciphers;
+﻿using System.Diagnostics;
+using System.Text;
+
+namespace Cryptography.Ciphers;
 
 /*
 RFC 3174
@@ -7,6 +10,8 @@ https://www.rfc-editor.org/rfc/rfc3174
 
 public class SHA1 : IDisposable
 {
+    List<byte> lastBlockBuffer = new List<byte>((int)BlockBytes);
+
     /* Digest. */
     readonly uint[] H = new uint[5]
     {
@@ -19,8 +24,8 @@ public class SHA1 : IDisposable
 
     ulong l = 0;
 
-    static readonly uint WORDS_PER_BLOCK = 16; // Word = 32-bit.
-    static readonly uint BLOCK_BYTES = WORDS_PER_BLOCK * 4;
+    const uint WordsPerBlock = 16; // Word = 32-bit.
+    const uint BlockBytes = WordsPerBlock * 4;
 
     /*
         A sequence of constant words K(0), K(1), ... , K(79) is used in the
@@ -56,8 +61,8 @@ public class SHA1 : IDisposable
         {
             return B ^ C ^ D;
         }
-        else
-        { // if (t >= 40 && t <= 59) {
+        else // if (t >= 40 && t <= 59)
+        {
             return (B & C) | (B & D) | (C & D);
         }
     }
@@ -67,39 +72,34 @@ public class SHA1 : IDisposable
         return (X << n) | (X >> (32 - n));
     }
 
-    static IEnumerable<byte[]> Split(byte[] value, int blockSize)
+    public void ProcessBuffer(byte[] buffer)
     {
-        int countOfArray = value.Length / blockSize;
-        if (value.Length % blockSize > 0)
-            countOfArray++;
+        byte[][] blocks = buffer.SplitIntoBlocksOfSize((int)BlockBytes);
 
-        for (int i = 0; i < countOfArray; i++)
+        for (int i = 0; i < blocks.Length; i++)
         {
-            yield return value.Skip(i * blockSize).Take(blockSize).ToArray();
+            Debug.Assert(blocks[i].Length == BlockBytes);
+     
+            lastBlockBuffer = blocks[i].ToList();
+            HashBlock(lastBlockBuffer);
         }
     }
 
-    public void ProcessBuffer(byte[] buffer)
+    public void Finish()
     {
-        l += (ulong)buffer.Length;
-        foreach (byte[] block in Split(buffer, (int)BLOCK_BYTES))
+        if (lastBlockBuffer.Count == (int)BlockBytes)
         {
-            if (block.Length < BLOCK_BYTES)
-            {
-                FinalPadMessage(block.ToList());
-            }
-            else
-            {
-                HashBlock(block.ToList());
-            }
+            lastBlockBuffer.Clear();
         }
+
+        FinalPadMessage(lastBlockBuffer);
     }
 
     public string HashHexString
     {
         get
         {
-            var result = new System.Text.StringBuilder();
+            var result = new StringBuilder();
             result.AppendFormat("{0:x8}", H[0]);
             result.AppendFormat("{0:x8}", H[1]);
             result.AppendFormat("{0:x8}", H[2]);
@@ -143,13 +143,15 @@ public class SHA1 : IDisposable
         H[2] += C;
         H[3] += D;
         H[4] += E;
+
+        l += BlockBytes;
     }
 
     void FinalPadMessage(List<byte> message)
     {
         int spaceForLengthAppend = 2 * sizeof(uint);
 
-        // a. "1" is appended.	
+        // a. "1" is appended.
         message.Add(0x80);
 
         /*
@@ -158,12 +160,12 @@ public class SHA1 : IDisposable
             block, process it, and then continue padding into a second
             block.
         */
-        if (message.Count > BLOCK_BYTES - spaceForLengthAppend)
+        if (message.Count > (int)BlockBytes - spaceForLengthAppend)
         {
             /* Edge case: size of block is between 56 and 64 bytes. One more block transform is needed. */
             /* Both blocks are padded to 64 bytes. */
 
-            while (message.Count < BLOCK_BYTES)
+            while (message.Count < (int)BlockBytes)
             {
                 message.Add(0x00);
             }
@@ -171,8 +173,9 @@ public class SHA1 : IDisposable
             HashBlock(message);
 
             /* Processing final block. Vector is 64 bytes at this point. */
-            message.Capacity = (int)BLOCK_BYTES - spaceForLengthAppend;
-            for (int i = 0; i < message.Capacity; i++)
+            message.RemoveRange((int)BlockBytes - spaceForLengthAppend, message.Count - ((int)BlockBytes - spaceForLengthAppend));
+
+            for (int i = 0; i < message.Count; i++)
             {
                 message[i] = 0x00;
             }
@@ -184,7 +187,8 @@ public class SHA1 : IDisposable
                 length of the message.  The last 64 bits of the last 512-bit block
                 are reserved for the length l of the original message.
             */
-            while (message.Count < BLOCK_BYTES - spaceForLengthAppend)
+
+            while (message.Count < (int)BlockBytes - spaceForLengthAppend)
             {
                 message.Add(0x00);
             }

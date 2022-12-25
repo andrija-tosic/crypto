@@ -6,7 +6,8 @@ using System.Text;
 public class FourSquareCipher
 {
     private readonly int gridSize;
-    private const char PadCharacter = '*';
+    private const char PadCharacter = 'x';
+    private const string PadCharacterAsString = "x";
     private readonly char[,] grid1;
     private readonly char[,] grid2;
 
@@ -80,7 +81,7 @@ public class FourSquareCipher
             }
             else
             {
-                plaintext.Append(PadCharacter);
+                ciphertext.Append(PadCharacter);
             }
 
             if (row2 != -1 && col1 != -1)
@@ -89,7 +90,7 @@ public class FourSquareCipher
             }
             else
             {
-                plaintext.Append(PadCharacter);
+                ciphertext.Append(PadCharacter);
             }
         }
         return ciphertext.ToString();
@@ -113,6 +114,6 @@ public class FourSquareCipher
                 plaintext.Append(grid2[row2, col1]);
             }
         }
-        return plaintext.ToString();
+        return plaintext.Replace(PadCharacterAsString, "").ToString();
     }
 }

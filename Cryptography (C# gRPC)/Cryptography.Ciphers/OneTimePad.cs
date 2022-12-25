@@ -1,4 +1,6 @@
-﻿namespace Cryptography.Ciphers;
+﻿using System.Diagnostics;
+
+namespace Cryptography.Ciphers;
 
 public class OneTimePad
 {
@@ -14,8 +16,10 @@ public class OneTimePad
 
         return pad;
     }
-    public void Decrypt(ref byte[] data, byte[] pad)
+    public void Decrypt(ref byte[] data, in byte[] pad)
     {
+        Debug.Assert(data.Length == pad.Length);
+
         for (int i = 0; i < pad.Length; i++)
         {
             data[i] = (byte)(data[i] ^ pad[i]);

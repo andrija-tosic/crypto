@@ -1,98 +1,37 @@
-﻿using Cryptography.Client;
+﻿using Cryptography;
+using Cryptography.Ciphers;
+using Cryptography.Client;
 using Grpc.Net.Client;
+using System.Diagnostics;
 
-GrpcChannel channel = GrpcChannel.ForAddress("http://localhost:5000");
+GrpcChannel channel = GrpcChannel.ForAddress($"http://localhost:5000", new GrpcChannelOptions
+{
+    MaxReceiveMessageSize = 16 * 1024 * 1024,
+});
 
 var client = new Cryptography.Cryptography.CryptographyClient(channel);
 
 string resourcesPath = "D:\\Desktop\\crypt\\Cryptography (C# gRPC)\\Cryptography.Client\\Resources\\";
 
-#if true
+Stopwatch stopwatch = Stopwatch.StartNew();
 
-var sha1Result = await RPC.SHA1HashFileAsync(client, resourcesPath + "bmp_otp_example.bmp");
+SHA1HashResult sha1Result = await RPC.SHA1HashFileAsync(client, resourcesPath + "xxtea_parallel_example.zip");
+
 Console.WriteLine(sha1Result.Hash);
+Console.WriteLine($"SHA1HashFileAsync done [{stopwatch.ElapsedMilliseconds} ms]");
+stopwatch.Restart();
 
+return;
 
-await RPC.EncryptBMPFileAsync(client,
-    resourcesPath + "bmp_otp_example.bmp",
-    resourcesPath + "bmp_otp_example.pad",
-    resourcesPath + "bmp_otp_example.enc.bmp");
-
-await RPC.DecryptBMPFileAsync(client,
-    resourcesPath + "bmp_otp_example.enc.bmp",
-    resourcesPath + "bmp_otp_example.pad",
-    resourcesPath + "bmp_otp_example.dec.bmp"
-    );
-
-await RPC.EncryptOneTimePadAsync(client,
-    resourcesPath + "otp_example.jpg",
-    resourcesPath + "otp_example.pad",
-    resourcesPath + "otp_example.enc.jpg"
-);
-
-await RPC.DecryptOneTimePadAsync(client,
-    resourcesPath + "otp_example.enc.jpg",
-    resourcesPath + "otp_example.pad",
-    resourcesPath + "otp_example.dec.jpg"
-);
-
-await RPC.EncryptFourSquareCipherAsync(client,
+await RPC.EncryptDecryptAndCheckSHA1Hash(Cipher.BMP, client, resourcesPath + "bmp_otp_example.bmp", "", "");
+await RPC.EncryptDecryptAndCheckSHA1Hash(Cipher.OneTimePad, client, resourcesPath + "otp_example.jpg", "", "");
+await RPC.EncryptDecryptAndCheckSHA1Hash(Cipher.FourSquareCipher,
+    client,
     resourcesPath + "fsc_example.txt",
-    resourcesPath + "fsc_example.enc.txt",
-    "NCDYRJETUPXOFGBMHIWSVKAZL",
-    "YXNEMKDIJFGRTWOABUSCHLZVP");
-
-
-await RPC.DecryptFourSquareCipherAsync(client,
-    resourcesPath + "fsc_example.enc.txt",
-    resourcesPath + "fsc_example.dec.txt",
-    "NCDYRJETUPXOFGBMHIWSVKAZL",
-    "YXNEMKDIJFGRTWOABUSCHLZVP");
-
-
-await RPC.EncryptXXTEAAsync(client,
-    resourcesPath + "xxtea_example.jpg",
-    resourcesPath + "xxtea_example.enc.jpg",
-    "12345678",
-    false
-    );
-
-await RPC.DecryptXXTEAAsync(client,
-    resourcesPath + "xxtea_example.enc.jpg",
-    resourcesPath + "xxtea_example.dec.jpg",
-    "12345678",
-    false
-    );
-
-await RPC.EncryptXXTEAOFBAsync(client,
-    resourcesPath + "xxtea_ofb_example.jpg",
-    resourcesPath + "xxtea_ofb_example.enc.jpg",
-    "12345678",
-    "12345678"
-    );
-
-await RPC.DecryptXXTEAOFBAsync(client,
-    resourcesPath + "xxtea_ofb_example.enc.jpg",
-    resourcesPath + "xxtea_ofb_example.dec.jpg",
-    "12345678",
-    "12345678"
-    );
-
-
-await RPC.EncryptXXTEAAsync(client,
-    resourcesPath + "xxtea_example.jpg",
-    resourcesPath + "xxtea_example.enc.jpg",
-    "12345678",
-    true
-    );
-
-await RPC.DecryptXXTEAAsync(client,
-    resourcesPath + "xxtea_example.enc.jpg",
-    resourcesPath + "xxtea_example.dec.jpg",
-    "12345678",
-    true
-    );
-
-#endif
+    "zgptfoihmuwdrcnykejaxvsbl",
+    "mfnbdcrhsaxyogvituewljzkp");
+await RPC.EncryptDecryptAndCheckSHA1Hash(Cipher.XXTEA, client, resourcesPath + "xxtea_example.zip", "12345678", "");
+await RPC.EncryptDecryptAndCheckSHA1Hash(Cipher.XXTEAParallel, client, resourcesPath + "xxtea_parallel_example.zip", "12345678", "");
+await RPC.EncryptDecryptAndCheckSHA1Hash(Cipher.OFBBlockCipher, client, resourcesPath + "xxtea_ofb_example.jpg", "12345678", "12345678");
 
 await channel.ShutdownAsync();

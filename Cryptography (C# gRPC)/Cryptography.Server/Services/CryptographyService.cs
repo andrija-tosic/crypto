@@ -3,12 +3,12 @@ using Grpc.Core;
 using System.Text;
 
 using Cryptography.Ciphers;
+using System.Diagnostics;
 
 namespace Cryptography.Server.Services;
 
 public class CryptographyService : Cryptography.CryptographyBase
 {
-    readonly int BUF_SIZE = 4096;
     public override async Task<SHA1HashResult> ComputeSHA1Hash(IAsyncStreamReader<ByteArray> requestStream, ServerCallContext context)
     {
         using var sha1 = new SHA1();
@@ -18,12 +18,14 @@ public class CryptographyService : Cryptography.CryptographyBase
             sha1.ProcessBuffer(requestStream.Current.Bytes.ToByteArray());
         }
 
+        sha1.Finish();
+
         return new SHA1HashResult { Hash = sha1.HashHexString };
     }
 
     public override async Task EncryptBMP(IAsyncStreamReader<ByteArray> requestStream, IServerStreamWriter<OneTimePadResult> responseStream, ServerCallContext context)
     {
-        using var BMPCryptography = new BMPCipher(BUF_SIZE);
+        using var BMPCryptography = new BMPCipher();
 
         /* Skip encrypting BMP header. */
 
@@ -56,7 +58,7 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task DecryptBMP(IAsyncStreamReader<OneTimePadResult> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
     {
-        using var BMPCryptography = new BMPCipher(BUF_SIZE);
+        using var BMPCryptography = new BMPCipher();
 
         /* Skip decrypting BMP header. */
 
@@ -118,6 +120,8 @@ public class CryptographyService : Cryptography.CryptographyBase
 
             otp.Decrypt(ref toDecrypt, padToDecryptWith);
 
+            Debug.Assert(toDecrypt.Length == padToDecryptWith.Length);
+
             var res = new ByteArray
             {
                 Bytes = ByteString.CopyFrom(toDecrypt)
@@ -138,7 +142,7 @@ public class CryptographyService : Cryptography.CryptographyBase
 
         do
         {
-            var encryptedText = fsc.EncryptText(requestStream.Current.Text);
+            string encryptedText = fsc.EncryptText(requestStream.Current.Text);
 
             var res = new FourSquareCipherResponse
             {
@@ -176,7 +180,6 @@ public class CryptographyService : Cryptography.CryptographyBase
         await requestStream.MoveNext();
 
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
-
         var xxtea = new XXTEA();
 
         do
@@ -191,7 +194,6 @@ public class CryptographyService : Cryptography.CryptographyBase
 
             await responseStream.WriteAsync(res);
         } while (await requestStream.MoveNext());
-
     }
 
     public override async Task DecryptXXTEA(IAsyncStreamReader<XXTEARequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
@@ -199,13 +201,12 @@ public class CryptographyService : Cryptography.CryptographyBase
         await requestStream.MoveNext();
 
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
-
         var xxtea = new XXTEA();
 
         do
         {
             byte[] toEncrypt = requestStream.Current.Bytes.ToByteArray();
-            byte[] encryptedBytes = xxtea.Encrypt(toEncrypt, key);
+            byte[] encryptedBytes = xxtea.Decrypt(toEncrypt, key);
 
             var res = new ByteArray
             {
@@ -262,18 +263,19 @@ public class CryptographyService : Cryptography.CryptographyBase
         } while (await requestStream.MoveNext());
     }
 
-    public override async Task EncryptXXTEAParallel(IAsyncStreamReader<XXTEARequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
+    public override async Task EncryptXXTEAParallel(IAsyncStreamReader<XXTEAParallelRequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
     {
         await requestStream.MoveNext();
 
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
+        int threadCount = requestStream.Current.ThreadCount;
 
         var xxtea = new XXTEA();
 
         do
         {
             byte[] toEncrypt = requestStream.Current.Bytes.ToByteArray();
-            byte[] encryptedBytes = xxtea.EncryptParallel(toEncrypt, key, 16);
+            byte[] encryptedBytes = XXTEA.EncryptParallel(toEncrypt, key, threadCount);
 
             var res = new ByteArray
             {
@@ -285,18 +287,19 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     }
 
-    public override async Task DecryptXXTEAParallel(IAsyncStreamReader<XXTEARequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
+    public override async Task DecryptXXTEAParallel(IAsyncStreamReader<XXTEAParallelRequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
     {
         await requestStream.MoveNext();
 
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
+        int threadCount = requestStream.Current.ThreadCount;
 
         var xxtea = new XXTEA();
 
         do
         {
             byte[] toDecrypt = requestStream.Current.Bytes.ToByteArray();
-            byte[] decryptedBytes = xxtea.DecryptParallel(toDecrypt, key, 16);
+            byte[] decryptedBytes = XXTEA.DecryptParallel(toDecrypt, key, threadCount);
 
             var res = new ByteArray
             {

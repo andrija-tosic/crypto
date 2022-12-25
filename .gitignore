@@ -1,3 +1,6 @@
+*.enc.*
+*.dec.*
+
 # Rider config files
 .idea/
 

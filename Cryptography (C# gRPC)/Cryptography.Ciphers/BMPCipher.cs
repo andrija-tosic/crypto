@@ -24,12 +24,10 @@ public struct BMPFileHeader
 
 public class BMPCipher : IDisposable
 {
-    readonly int BUF_SIZE;
     OneTimePad otp;
 
-    public BMPCipher(int bufSize)
+    public BMPCipher()
     {
-        BUF_SIZE = bufSize;
         otp = new OneTimePad();
     }
 
@@ -44,5 +42,6 @@ public class BMPCipher : IDisposable
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
     }
 }

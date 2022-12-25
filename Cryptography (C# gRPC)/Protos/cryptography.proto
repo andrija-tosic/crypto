@@ -11,17 +11,17 @@ service Cryptography {
   rpc EncryptBMP(stream ByteArray) returns (stream OneTimePadResult);
   rpc DecryptBMP(stream OneTimePadResult) returns (stream ByteArray);
 
-  rpc EncryptXXTEA(stream XXTEARequest) returns (stream ByteArray);
-  rpc DecryptXXTEA(stream XXTEARequest) returns (stream ByteArray);
-
   rpc EncryptFourSquareCipher(stream FourSquareCipherRequest) returns (stream FourSquareCipherResponse);
   rpc DecryptFourSquareCipher(stream FourSquareCipherRequest) returns (stream FourSquareCipherResponse);
 
+  rpc EncryptXXTEA(stream XXTEARequest) returns (stream ByteArray);
+  rpc DecryptXXTEA(stream XXTEARequest) returns (stream ByteArray);
+
+  rpc EncryptXXTEAParallel(stream XXTEAParallelRequest) returns (stream ByteArray);
+  rpc DecryptXXTEAParallel(stream XXTEAParallelRequest) returns (stream ByteArray);
+
   rpc EncryptXXTEAOFB(stream XXTEAOFBRequest) returns (stream ByteArray);
   rpc DecryptXXTEAOFB(stream XXTEAOFBRequest) returns (stream ByteArray);
-
-  rpc EncryptXXTEAParallel(stream XXTEARequest) returns (stream ByteArray);
-  rpc DecryptXXTEAParallel(stream XXTEARequest) returns (stream ByteArray);
 }
 
 message ByteArray {
@@ -50,6 +50,12 @@ message OneTimePadResult {
 message XXTEARequest {
 	bytes bytes = 1;
 	string key = 2;
+}
+
+message XXTEAParallelRequest {
+	bytes bytes = 1;
+	string key = 2;
+	int32 thread_count = 3;
 }
 
 message XXTEAOFBRequest {
