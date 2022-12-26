@@ -3,13 +3,10 @@ public class OFBBlockCipher : IDisposable
 {
     private readonly IBlockCipher blockCipher;
 
-    private readonly byte[] key;
     private byte[] outputFeedback;
-
-    public OFBBlockCipher(IBlockCipher blockCipher, byte[] key, byte[] IV)
+    public OFBBlockCipher(IBlockCipher blockCipher, byte[] IV)
     {
         this.blockCipher = blockCipher;
-        this.key = key;
         this.outputFeedback = (byte[])IV.Clone();
     }
 

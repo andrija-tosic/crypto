@@ -152,7 +152,7 @@ public class CryptographyService : Cryptography.CryptographyBase
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
         byte[] IV = requestStream.Current.IV.ToByteArray();
 
-        using OFBBlockCipher xxteaOfb = new(new XXTEA(key), key, IV);
+        using OFBBlockCipher xxteaOfb = new(new XXTEA(key), IV);
 
         do
         {
@@ -175,7 +175,7 @@ public class CryptographyService : Cryptography.CryptographyBase
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
         byte[] IV = requestStream.Current.IV.ToByteArray();
 
-        using OFBBlockCipher xxteaOfb = new(new XXTEA(key), key, IV);
+        using OFBBlockCipher xxteaOfb = new(new XXTEA(key), IV);
 
         do
         {
