@@ -31,7 +31,7 @@ public static class RPC
 
     public static async Task EncryptBMPFileAsync(Cryptography.CryptographyClient client, string inFilePath, string outPadFilePath, string outFilePath)
     {
-        var bmpHeader = new BMPFileHeader(inFilePath);
+        BMPFileHeader bmpHeader = BMPFileHeader.FromFile(inFilePath);
 
         using BlockFileStreamReader inFileStream = new(inFilePath, BMPFileHeader.BMPHeaderSize);
         using FileStream outFileStream = File.OpenWrite(outFilePath);
@@ -70,7 +70,7 @@ public static class RPC
 
     public static async Task DecryptBMPFileAsync(Cryptography.CryptographyClient client, string inFilePath, string inPadFilePath, string outFilePath)
     {
-        var bmpHeader = new BMPFileHeader(inFilePath);
+        BMPFileHeader bmpHeader = BMPFileHeader.FromFile(inFilePath);
 
         using BlockFileStreamReader inFileStream = new(inFilePath, BMPFileHeader.BMPHeaderSize);
         using BlockFileStreamReader inPadFileStream = new(inPadFilePath, BufferSize);
@@ -165,12 +165,15 @@ public static class RPC
         await response;
     }
 
-    public static async Task EncryptFourSquareCipherAsync(Cryptography.CryptographyClient client, string inFilePath, string outFilePath, string key1, string key2)
+    private static async Task FourSquareCipherClientFunc(
+        Cryptography.CryptographyClient client,
+        string inFilePath, string outFilePath, string key1, string key2, bool encrypt)
     {
         using StreamReader inFileStream = new(inFilePath);
         using StreamWriter outFileStream = new(outFilePath);
 
-        using AsyncDuplexStreamingCall<FourSquareCipherRequest, FourSquareCipherResponse> streamingCall = client.EncryptFourSquareCipher();
+        using AsyncDuplexStreamingCall<FourSquareCipherRequest, FourSquareCipherResponse> streamingCall =
+            encrypt ? client.EncryptFourSquareCipher() : client.DecryptFourSquareCipher();
 
         var response = Task.Run(async () =>
         {
@@ -180,9 +183,10 @@ public static class RPC
             }
         });
 
+        
         await streamingCall.RequestStream.WriteAsync(new FourSquareCipherRequest
         {
-            Text = string.Empty,
+            Text = inFileStream.ReadLine(),
             Key1 = key1,
             Key2 = key2
         });
@@ -201,40 +205,14 @@ public static class RPC
         await response;
     }
 
+    public static async Task EncryptFourSquareCipherAsync(Cryptography.CryptographyClient client, string inFilePath, string outFilePath, string key1, string key2)
+    {
+        await FourSquareCipherClientFunc(client, inFilePath, outFilePath, key1, key2, true);
+    }
+
     public static async Task DecryptFourSquareCipherAsync(Cryptography.CryptographyClient client, string inFilePath, string outFilePath, string key1, string key2)
     {
-        using StreamReader inFileStream = new(inFilePath);
-        using StreamWriter outFileStream = new(outFilePath);
-
-        using AsyncDuplexStreamingCall<FourSquareCipherRequest, FourSquareCipherResponse> streamingCall = client.DecryptFourSquareCipher();
-
-        var response = Task.Run(async () =>
-        {
-            while (await streamingCall.ResponseStream.MoveNext())
-            {
-                outFileStream.Write(streamingCall.ResponseStream.Current.Text);
-            }
-        });
-
-        await streamingCall.RequestStream.WriteAsync(new FourSquareCipherRequest
-        {
-            Text = string.Empty,
-            Key1 = key1,
-            Key2 = key2
-        });
-
-        while (inFileStream.Peek() >= 0)
-        {
-            await streamingCall.RequestStream.WriteAsync(new FourSquareCipherRequest
-            {
-                Text = inFileStream.ReadLine(),
-                Key1 = string.Empty,
-                Key2 = string.Empty
-            });
-        }
-
-        await streamingCall.RequestStream.CompleteAsync();
-        await response;
+        await FourSquareCipherClientFunc(client, inFilePath, outFilePath, key1, key2, false);
     }
 
     public static async Task EncryptXXTEAAsync(Cryptography.CryptographyClient client, string inFilePath, string outFilePath, string key, bool parallelize)

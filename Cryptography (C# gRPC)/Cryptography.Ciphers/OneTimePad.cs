@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Security.Cryptography;
 
 namespace Cryptography.Ciphers;
 
@@ -7,7 +8,7 @@ public class OneTimePad
     public static byte[] Encrypt(ref byte[] data)
     {
         byte[] pad = new byte[data.Length];
-        Random.Shared.NextBytes(pad);
+        RandomNumberGenerator.Fill(pad);
 
         for (int i = 0; i < data.Length; i++)
         {

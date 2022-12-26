@@ -1,4 +1,6 @@
-﻿namespace Cryptography.Ciphers;
+﻿using System.Threading;
+
+namespace Cryptography.Ciphers;
 public class XXTEA : IBlockCipher
 {
     private const uint Delta = 0x9E3779B9;
@@ -8,7 +10,6 @@ public class XXTEA : IBlockCipher
     {
         this.key = key.ToUInt32Array();
     }
-
     public byte[] Encrypt(byte[] data)
     {
         if (data.Length == 0)
@@ -107,15 +108,30 @@ public class XXTEA : IBlockCipher
 
     public byte[] EncryptParallel(byte[] data, int numThreads)
     {
+#if false
+        ThreadPool.GetMaxThreads(out int workerThreads, out int completionPortThreads);
+        ThreadPool.SetMaxThreads(numThreads, completionPortThreads);
+#endif
         uint[][] blocks = data.SplitIntoNUInt32Blocks(numThreads);
 
         var threads = new Thread[numThreads];
 
+#if false
+        var countdownEvent = new CountdownEvent(blocks.Length);
+#endif
         for (int i = 0; i < blocks.Length; i++)
         {
             int blockIndex = i;
             threads[i] = new Thread(() => Encrypt(ref blocks[blockIndex], this.key));
             threads[i].Start();
+
+#if false
+            ThreadPool.QueueUserWorkItem((state) =>
+            {
+                Encrypt(ref blocks[blockIndex], this.key);
+                countdownEvent.Signal();
+            });
+#endif
         }
 
         foreach (Thread thread in threads)
@@ -123,20 +139,42 @@ public class XXTEA : IBlockCipher
             thread.Join();
         }
 
+#if false
+        countdownEvent.Wait();
+#endif
+
+#if false
+        Parallel.ForEach(blocks, (block) => Encrypt(ref block, this.key));
+#endif
         return blocks.JoinBlocks();
     }
 
     public byte[] DecryptParallel(byte[] data, int numThreads)
     {
+#if false
+        ThreadPool.GetMaxThreads(out int workerThreads, out int completionPortThreads);
+        ThreadPool.SetMaxThreads(numThreads, completionPortThreads);
+#endif
         uint[][] blocks = data.SplitIntoNUInt32Blocks(numThreads);
 
         var threads = new Thread[numThreads];
 
+#if false
+        var countdownEvent = new CountdownEvent(blocks.Length);
+#endif
         for (int i = 0; i < blocks.Length; i++)
         {
             int blockIndex = i;
             threads[i] = new Thread(() => Decrypt(ref blocks[blockIndex], this.key));
             threads[i].Start();
+
+#if false
+            ThreadPool.QueueUserWorkItem((state) =>
+            {
+                Decrypt(ref blocks[blockIndex], this.key);
+                countdownEvent.Signal();
+            });
+#endif
         }
 
         foreach (Thread thread in threads)
@@ -144,6 +182,13 @@ public class XXTEA : IBlockCipher
             thread.Join();
         }
 
+#if false
+        countdownEvent.Wait();
+#endif
+
+#if false
+        Parallel.ForEach(blocks, (block) => Decrypt(ref block, this.key));
+#endif
         return blocks.JoinBlocks();
     }
 }
