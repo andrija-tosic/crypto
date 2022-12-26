@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Cryptography.Client;
 
-internal static class RPC
+public static class RPC
 {
     private const int BufferSize = 1024 * 1024;
     private static readonly int ParallelThreadCount = Environment.ProcessorCount;
@@ -447,120 +447,113 @@ internal static class RPC
         await streamingCall.RequestStream.CompleteAsync();
         await response;
     }
-
-    private static string BytesToString(long byteCount)
-    {
-        string[] suf = { "B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB" };
-
-        if (byteCount == 0)
-        {
-            return "0" + suf[0];
-        }
-
-        long bytes = Math.Abs(byteCount);
-        int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
-        double num = Math.Round(bytes / Math.Pow(1024, place), 1);
-
-        return (Math.Sign(byteCount) * num).ToString() + suf[place];
-    }
-
     public static async Task EncryptDecryptAndCheckSHA1Hash(Cipher cipher, Cryptography.CryptographyClient client, string inFilePath, string key1, string key2)
     {
-        string dirPath = new FileInfo(inFilePath).Directory.FullName;
-
-        string fileName = Path.GetFileNameWithoutExtension(inFilePath);
-        string fileExt = Path.GetExtension(inFilePath);
-
-        string encryptedFilePath = dirPath + "/" + fileName + ".enc" + fileExt;
-        string decryptedFilePath = dirPath + "/" + fileName + ".dec" + fileExt;
-        string padFilePath = dirPath + "/" + fileName + ".pad";
-
-        long fileSize = new FileInfo(inFilePath).Length;
-
-        Console.WriteLine($"{BytesToString(fileSize)} file");
-
-        var stopwatch = Stopwatch.StartNew();
-
-        switch (cipher)
+        try
         {
-            case Cipher.BMP:
-                {
+            string dirPath = new FileInfo(inFilePath).Directory.FullName;
 
-                    await EncryptBMPFileAsync(client, inFilePath, padFilePath, encryptedFilePath);
-                    Console.WriteLine($"{cipher} encryption done [{stopwatch.ElapsedMilliseconds} ms]");
+            string fileName = Path.GetFileNameWithoutExtension(inFilePath);
+            string fileExt = Path.GetExtension(inFilePath);
 
-                    await DecryptBMPFileAsync(client, encryptedFilePath, padFilePath, decryptedFilePath);
-                    Console.WriteLine($"{cipher} decryption done [{stopwatch.ElapsedMilliseconds} ms]");
+            string encryptedFilePath = dirPath + "/" + fileName + ".enc" + fileExt;
+            string decryptedFilePath = dirPath + "/" + fileName + ".dec" + fileExt;
+            string padFilePath = dirPath + "/" + fileName + ".pad";
 
-                    break;
-                }
-            case Cipher.FourSquareCipher:
-                {
-                    await EncryptFourSquareCipherAsync(client, inFilePath, encryptedFilePath, key1, key2);
-                    Console.WriteLine($"{cipher} encryption done [{stopwatch.ElapsedMilliseconds} ms]");
+            long fileSize = new FileInfo(inFilePath).Length;
 
-                    await DecryptFourSquareCipherAsync(client, encryptedFilePath, decryptedFilePath, key1, key2);
-                    Console.WriteLine($"{cipher} decryption done [{stopwatch.ElapsedMilliseconds} ms]");
+            Console.WriteLine($"{BlockFileStreamReader.BytesToString(fileSize)} file");
 
-                    break;
-                }
-            case Cipher.OneTimePad:
-                {
-                    await EncryptOneTimePadAsync(client, inFilePath, padFilePath, encryptedFilePath);
-                    Console.WriteLine($"{cipher} encryption done [{stopwatch.ElapsedMilliseconds} ms]");
+            var stopwatch = Stopwatch.StartNew();
 
-                    await DecryptOneTimePadAsync(client, encryptedFilePath, padFilePath, decryptedFilePath);
-                    Console.WriteLine($"{cipher} decryption done [{stopwatch.ElapsedMilliseconds} ms]");
+            switch (cipher)
+            {
+                case Cipher.BMP:
+                    {
 
-                    break;
-                }
-            case Cipher.XXTEA:
-                {
-                    await EncryptXXTEAAsync(client, inFilePath, encryptedFilePath, key1, false);
-                    Console.WriteLine($"{cipher} encryption done [{stopwatch.ElapsedMilliseconds} ms]");
+                        await EncryptBMPFileAsync(client, inFilePath, padFilePath, encryptedFilePath);
+                        Console.WriteLine($"{cipher} encryption done [{stopwatch.ElapsedMilliseconds} ms]");
 
-                    await DecryptXXTEAAsync(client, encryptedFilePath, decryptedFilePath, key1, false);
-                    Console.WriteLine($"{cipher} decryption done [{stopwatch.ElapsedMilliseconds} ms]");
+                        await DecryptBMPFileAsync(client, encryptedFilePath, padFilePath, decryptedFilePath);
+                        Console.WriteLine($"{cipher} decryption done [{stopwatch.ElapsedMilliseconds} ms]");
 
-                    break;
-                }
-            case Cipher.XXTEAParallel:
-                {
-                    await EncryptXXTEAAsync(client, inFilePath, encryptedFilePath, key1, true);
-                    Console.WriteLine($"{cipher} encryption done [{stopwatch.ElapsedMilliseconds} ms]");
+                        break;
+                    }
+                case Cipher.FourSquareCipher:
+                    {
+                        await EncryptFourSquareCipherAsync(client, inFilePath, encryptedFilePath, key1, key2);
+                        Console.WriteLine($"{cipher} encryption done [{stopwatch.ElapsedMilliseconds} ms]");
 
-                    await DecryptXXTEAAsync(client, encryptedFilePath, decryptedFilePath, key1, true);
-                    Console.WriteLine($"{cipher} decryption done [{stopwatch.ElapsedMilliseconds} ms]");
+                        await DecryptFourSquareCipherAsync(client, encryptedFilePath, decryptedFilePath, key1, key2);
+                        Console.WriteLine($"{cipher} decryption done [{stopwatch.ElapsedMilliseconds} ms]");
 
-                    break;
-                }
-            case Cipher.OFBBlockCipher:
-                {
-                    await EncryptXXTEAOFBAsync(client, inFilePath, encryptedFilePath, key1, key2);
-                    Console.WriteLine($"{cipher} encryption done [{stopwatch.ElapsedMilliseconds} ms]");
+                        break;
+                    }
+                case Cipher.OneTimePad:
+                    {
+                        await EncryptOneTimePadAsync(client, inFilePath, padFilePath, encryptedFilePath);
+                        Console.WriteLine($"{cipher} encryption done [{stopwatch.ElapsedMilliseconds} ms]");
 
-                    await DecryptXXTEAOFBAsync(client, encryptedFilePath, decryptedFilePath, key1, key2);
-                    Console.WriteLine($"{cipher} decryption done [{stopwatch.ElapsedMilliseconds} ms]");
+                        await DecryptOneTimePadAsync(client, encryptedFilePath, padFilePath, decryptedFilePath);
+                        Console.WriteLine($"{cipher} decryption done [{stopwatch.ElapsedMilliseconds} ms]");
 
-                    break;
-                }
+                        break;
+                    }
+                case Cipher.XXTEA:
+                    {
+                        await EncryptXXTEAAsync(client, inFilePath, encryptedFilePath, key1, false);
+                        Console.WriteLine($"{cipher} encryption done [{stopwatch.ElapsedMilliseconds} ms]");
+
+                        await DecryptXXTEAAsync(client, encryptedFilePath, decryptedFilePath, key1, false);
+                        Console.WriteLine($"{cipher} decryption done [{stopwatch.ElapsedMilliseconds} ms]");
+
+                        break;
+                    }
+                case Cipher.XXTEAParallel:
+                    {
+                        await EncryptXXTEAAsync(client, inFilePath, encryptedFilePath, key1, true);
+                        Console.WriteLine($"{cipher} encryption done [{stopwatch.ElapsedMilliseconds} ms]");
+
+                        await DecryptXXTEAAsync(client, encryptedFilePath, decryptedFilePath, key1, true);
+                        Console.WriteLine($"{cipher} decryption done [{stopwatch.ElapsedMilliseconds} ms]");
+
+                        break;
+                    }
+                case Cipher.OFBBlockCipher:
+                    {
+                        await EncryptXXTEAOFBAsync(client, inFilePath, encryptedFilePath, key1, key2);
+                        Console.WriteLine($"{cipher} encryption done [{stopwatch.ElapsedMilliseconds} ms]");
+
+                        await DecryptXXTEAOFBAsync(client, encryptedFilePath, decryptedFilePath, key1, key2);
+                        Console.WriteLine($"{cipher} decryption done [{stopwatch.ElapsedMilliseconds} ms]");
+
+                        break;
+                    }
+            }
+
+            stopwatch.Restart();
+            SHA1HashResult sha1Before = await SHA1HashFileAsync(client, inFilePath);
+            SHA1HashResult sha1After = await SHA1HashFileAsync(client, decryptedFilePath);
+
+            if (sha1Before.Hash == sha1After.Hash)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"{cipher} cipher SHA1 hashes match [{stopwatch.ElapsedMilliseconds} ms]");
+                Console.ResetColor();
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"{cipher} cipher SHA1 hashes do not match [{stopwatch.ElapsedMilliseconds} ms]");
+                Console.ResetColor();
+            }
         }
-
-        stopwatch.Restart();
-        SHA1HashResult sha1Before = await SHA1HashFileAsync(client, inFilePath);
-        SHA1HashResult sha1After = await SHA1HashFileAsync(client, decryptedFilePath);
-
-        if (sha1Before.Hash == sha1After.Hash)
+        catch (DirectoryNotFoundException e)
         {
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"{cipher} cipher SHA1 hashes match [{stopwatch.ElapsedMilliseconds} ms]");
-            Console.ResetColor();
-        }
-        else
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"{cipher} cipher SHA1 hashes do not match [{stopwatch.ElapsedMilliseconds} ms]");
-            Console.ResetColor();
+            Console.WriteLine(e.Message);
+            throw;
         }
     }
+
+
 }

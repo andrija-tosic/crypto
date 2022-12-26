@@ -1,8 +1,14 @@
-﻿using Cryptography;
+﻿
+using Cryptography;
 using Cryptography.Ciphers;
 using Cryptography.Client;
 using Grpc.Net.Client;
 using System.Diagnostics;
+
+/***************************************************
+ * This is only client in console app demonstration.
+ * Old code. See tests.
+***************************************************/
 
 var channel = GrpcChannel.ForAddress($"http://localhost:5000", new GrpcChannelOptions
 {
