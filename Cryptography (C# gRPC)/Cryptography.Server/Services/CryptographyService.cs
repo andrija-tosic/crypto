@@ -22,80 +22,12 @@ public class CryptographyService : Cryptography.CryptographyBase
         return new SHA1HashResult { Hash = sha1.HashHexString };
     }
 
-    public override async Task EncryptBMP(IAsyncStreamReader<ByteArray> requestStream, IServerStreamWriter<OneTimePadResult> responseStream, ServerCallContext context)
-    {
-        using BMPCipher BMPCryptography = new();
-
-        /* Skip encrypting BMP header. */
-
-        _ = await requestStream.MoveNext();
-
-        byte[] headerBytes = requestStream.Current.Bytes.ToByteArray();
-
-        OneTimePadResult headerResult = new()
-        {
-            EncrpytedBytes = ByteString.CopyFrom(headerBytes),
-            Pad = ByteString.CopyFrom(new byte[headerBytes.Length])
-        };
-
-        await responseStream.WriteAsync(headerResult);
-
-        while (await requestStream.MoveNext())
-        {
-            byte[] toEncrypt = requestStream.Current.Bytes.ToByteArray();
-            byte[] pad = BMPCryptography.EncryptOneTimePad(toEncrypt);
-
-            OneTimePadResult res = new()
-            {
-                EncrpytedBytes = ByteString.CopyFrom(toEncrypt),
-                Pad = ByteString.CopyFrom(pad)
-            };
-
-            await responseStream.WriteAsync(res);
-        }
-    }
-
-    public override async Task DecryptBMP(IAsyncStreamReader<OneTimePadResult> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
-    {
-        using BMPCipher BMPCryptography = new();
-
-        /* Skip decrypting BMP header. */
-
-        _ = await requestStream.MoveNext();
-
-        byte[] headerBytes = requestStream.Current.EncrpytedBytes.ToByteArray();
-
-        ByteArray headerResult = new()
-        {
-            Bytes = ByteString.CopyFrom(headerBytes)
-        };
-
-        await responseStream.WriteAsync(headerResult);
-
-        while (await requestStream.MoveNext())
-        {
-            byte[] toDecrypt = requestStream.Current.EncrpytedBytes.ToByteArray();
-            byte[] padToDecryptWith = requestStream.Current.Pad.ToByteArray();
-
-            BMPCryptography.DecryptOneTimePad(toDecrypt, padToDecryptWith);
-
-            ByteArray res = new()
-            {
-                Bytes = ByteString.CopyFrom(toDecrypt)
-            };
-
-            await responseStream.WriteAsync(res);
-        }
-    }
-
     public override async Task EncryptOneTimePad(IAsyncStreamReader<ByteArray> requestStream, IServerStreamWriter<OneTimePadResult> responseStream, ServerCallContext context)
     {
-        OneTimePad otp = new();
-
         while (await requestStream.MoveNext())
         {
             byte[] toEncrypt = requestStream.Current.Bytes.ToByteArray();
-            byte[] pad = otp.Encrypt(ref toEncrypt);
+            byte[] pad = OneTimePad.Encrypt(ref toEncrypt);
 
             OneTimePadResult res = new()
             {
@@ -109,14 +41,12 @@ public class CryptographyService : Cryptography.CryptographyBase
 
     public override async Task DecryptOneTimePad(IAsyncStreamReader<OneTimePadResult> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
     {
-        OneTimePad otp = new();
-
         while (await requestStream.MoveNext())
         {
             byte[] toDecrypt = requestStream.Current.EncrpytedBytes.ToByteArray();
             byte[] padToDecryptWith = requestStream.Current.Pad.ToByteArray();
 
-            otp.Decrypt(ref toDecrypt, padToDecryptWith);
+            OneTimePad.Decrypt(ref toDecrypt, padToDecryptWith);
 
             Debug.Assert(toDecrypt.Length == padToDecryptWith.Length);
 

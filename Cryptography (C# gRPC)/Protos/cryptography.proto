@@ -8,9 +8,6 @@ service Cryptography {
   rpc EncryptOneTimePad(stream ByteArray) returns (stream OneTimePadResult);
   rpc DecryptOneTimePad(stream OneTimePadResult) returns (stream ByteArray);
 
-  rpc EncryptBMP(stream ByteArray) returns (stream OneTimePadResult);
-  rpc DecryptBMP(stream OneTimePadResult) returns (stream ByteArray);
-
   rpc EncryptFourSquareCipher(stream FourSquareCipherRequest) returns (stream FourSquareCipherResponse);
   rpc DecryptFourSquareCipher(stream FourSquareCipherRequest) returns (stream FourSquareCipherResponse);
 

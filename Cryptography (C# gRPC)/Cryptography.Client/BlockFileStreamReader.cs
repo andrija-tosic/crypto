@@ -14,6 +14,13 @@ public class BlockFileStreamReader : IDisposable
         this.blockSize = blockSize;
     }
 
+    public BlockFileStreamReader(FileStream fileStream, int blockSize)
+    {
+        this.stream = fileStream;
+        this.buffer = new byte[blockSize];
+        this.blockSize = blockSize;
+    }
+
     public async Task<bool> ReadBlock()
     {
         int bytesRead = await this.stream.ReadAsync(this.buffer);

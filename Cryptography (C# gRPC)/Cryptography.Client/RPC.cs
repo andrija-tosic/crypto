@@ -31,21 +31,21 @@ public static class RPC
 
     public static async Task EncryptBMPFileAsync(Cryptography.CryptographyClient client, string inFilePath, string outPadFilePath, string outFilePath)
     {
-        using BlockFileStreamReader inFileStream = new(inFilePath, 54);
+        var bmpHeader = new BMPFileHeader(inFilePath);
+
+        using BlockFileStreamReader inFileStream = new(inFilePath, BMPFileHeader.BMPHeaderSize);
         using FileStream outFileStream = File.OpenWrite(outFilePath);
         using FileStream outPadFileStream = File.OpenWrite(outPadFilePath);
 
-        /* Read BMP header. */
+        /* Read BMP bmpHeader. */
         _ = await inFileStream.ReadBlock();
 
-        using AsyncDuplexStreamingCall<ByteArray, OneTimePadResult> streamingCall = client.EncryptBMP();
-
-        await streamingCall.RequestStream.WriteAsync(new ByteArray
-        {
-            Bytes = inFileStream.CurrentBlock
-        });
+        /* Write unencrypted BMP bmpHeader to file. */
+        outFileStream.Write(inFileStream.CurrentBlock.Span);
 
         inFileStream.BlockSize = BufferSize;
+
+        using AsyncDuplexStreamingCall<ByteArray, OneTimePadResult> streamingCall = client.EncryptOneTimePad();
 
         var response = Task.Run(async () =>
         {
@@ -70,27 +70,21 @@ public static class RPC
 
     public static async Task DecryptBMPFileAsync(Cryptography.CryptographyClient client, string inFilePath, string inPadFilePath, string outFilePath)
     {
-        using BlockFileStreamReader inFileStream = new(inFilePath, 54);
-        using BlockFileStreamReader inPadFileStream = new(inPadFilePath, 54);
+        var bmpHeader = new BMPFileHeader(inFilePath);
+
+        using BlockFileStreamReader inFileStream = new(inFilePath, BMPFileHeader.BMPHeaderSize);
+        using BlockFileStreamReader inPadFileStream = new(inPadFilePath, BufferSize);
         using FileStream outFileStream = File.OpenWrite(outFilePath);
 
-        /* Read BMP header. */
+        /* Read BMP bmpHeader. */
         _ = await inFileStream.ReadBlock();
 
-        using AsyncDuplexStreamingCall<OneTimePadResult, ByteArray> streamingCall = client.DecryptBMP();
-
-        _ = await inPadFileStream.ReadBlock();
-
-        /* Write BMP header to stream. */
-        await streamingCall.RequestStream.WriteAsync(new OneTimePadResult
-        {
-            EncrpytedBytes = inFileStream.CurrentBlock,
-            Pad = inPadFileStream.CurrentBlock
-        }
-        );
+        /* Write unencrypted BMP bmpHeader to file. */
+        outFileStream.Write(inFileStream.CurrentBlock.Span);
 
         inFileStream.BlockSize = BufferSize;
-        inPadFileStream.BlockSize = BufferSize;
+
+        using AsyncDuplexStreamingCall<OneTimePadResult, ByteArray> streamingCall = client.DecryptOneTimePad();
 
         var response = Task.Run(async () =>
         {

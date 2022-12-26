@@ -4,7 +4,7 @@ namespace Cryptography.Ciphers;
 
 public class OneTimePad
 {
-    public byte[] Encrypt(ref byte[] data)
+    public static byte[] Encrypt(ref byte[] data)
     {
         byte[] pad = new byte[data.Length];
         Random.Shared.NextBytes(pad);
@@ -16,7 +16,7 @@ public class OneTimePad
 
         return pad;
     }
-    public void Decrypt(ref byte[] data, in byte[] pad)
+    public static void Decrypt(ref byte[] data, in byte[] pad)
     {
         Debug.Assert(data.Length == pad.Length);
 
