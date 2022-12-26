@@ -17,11 +17,13 @@ public class ServerFixture : IDisposable
         string projectDir = Resources.Resources.ProjectDirectory;
         string serverDir = Directory.GetParent(projectDir).Parent.FullName + @"\Cryptography.Server\Cryptography.Server.csproj";
 
-        string args = $"run --project \"{serverDir}\"";
+        string args = $"run -c Release --project \"{serverDir}\"";
 
-        var processInfo = new ProcessStartInfo("dotnet");
-        processInfo.Arguments = args;
-        processInfo.UseShellExecute = true;
+        var processInfo = new ProcessStartInfo("dotnet")
+        {
+            Arguments = args,
+            UseShellExecute = true
+        };
 
         this.serverProcess = Process.Start(processInfo);
 

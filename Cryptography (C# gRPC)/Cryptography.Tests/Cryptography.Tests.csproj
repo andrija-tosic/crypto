@@ -50,7 +50,7 @@
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Command="echo $(ProjectDir) &gt; &quot;$(ProjectDir)Resources\ProjectDirectory.txt&quot;&#xD;&#xA;echo '$(ProjectDir)'&#xD;&#xA;echo '$(ProjectDir)Resources\ProjectDirectory.txt'" />
+    <Exec Command="echo $(ProjectDir) &gt; &quot;$(ProjectDir)Resources\ProjectDirectory.txt&quot;" />
   </Target>
 
 </Project>
