@@ -25,7 +25,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Cryptography.Ciphers\Cryptography.Ciphers.csproj" />
     <ProjectReference Include="..\Cryptography.Client\Cryptography.Client.csproj">
       <Aliases>CryptoClient</Aliases>
     </ProjectReference>

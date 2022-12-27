@@ -14,7 +14,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cryptography.Tests", "Cryptography.Tests\Cryptography.Tests.csproj", "{78C42040-653D-44A7-9769-9E2EBD900F08}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cryptography.Tests", "Cryptography.Tests\Cryptography.Tests.csproj", "{78C42040-653D-44A7-9769-9E2EBD900F08}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cryptography.Bitmap", "Cryptography.Bitmap\Cryptography.Bitmap.csproj", "{1D756844-ADAA-4D48-9BC9-84E9A398DBDB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,6 +40,10 @@ Global
 		{78C42040-653D-44A7-9769-9E2EBD900F08}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{78C42040-653D-44A7-9769-9E2EBD900F08}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{78C42040-653D-44A7-9769-9E2EBD900F08}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D756844-ADAA-4D48-9BC9-84E9A398DBDB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D756844-ADAA-4D48-9BC9-84E9A398DBDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D756844-ADAA-4D48-9BC9-84E9A398DBDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D756844-ADAA-4D48-9BC9-84E9A398DBDB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

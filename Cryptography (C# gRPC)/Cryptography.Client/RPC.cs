@@ -1,4 +1,4 @@
-﻿using Cryptography.Ciphers;
+﻿using Cryptography.Bitmap;
 using Google.Protobuf;
 using Grpc.Core;
 using System.Diagnostics;
@@ -31,16 +31,16 @@ public static class RPC
 
     public static async Task EncryptBMPFileAsync(Cryptography.CryptographyClient client, string inFilePath, string outPadFilePath, string outFilePath)
     {
-        BMPFileHeader bmpHeader = BMPFileHeader.FromFile(inFilePath);
+        var bmpHeader = BMPFileHeader.FromFile(inFilePath);
 
         using BlockFileStreamReader inFileStream = new(inFilePath, BMPFileHeader.BMPHeaderSize);
         using FileStream outFileStream = File.OpenWrite(outFilePath);
         using FileStream outPadFileStream = File.OpenWrite(outPadFilePath);
 
-        /* Read BMP bmpHeader. */
+        /* Read BMP header. */
         _ = await inFileStream.ReadBlock();
 
-        /* Write unencrypted BMP bmpHeader to file. */
+        /* Write unencrypted BMP header to file. */
         outFileStream.Write(inFileStream.CurrentBlock.Span);
 
         inFileStream.BlockSize = BufferSize;
@@ -70,16 +70,16 @@ public static class RPC
 
     public static async Task DecryptBMPFileAsync(Cryptography.CryptographyClient client, string inFilePath, string inPadFilePath, string outFilePath)
     {
-        BMPFileHeader bmpHeader = BMPFileHeader.FromFile(inFilePath);
+        var bmpHeader = BMPFileHeader.FromFile(inFilePath);
 
         using BlockFileStreamReader inFileStream = new(inFilePath, BMPFileHeader.BMPHeaderSize);
         using BlockFileStreamReader inPadFileStream = new(inPadFilePath, BufferSize);
         using FileStream outFileStream = File.OpenWrite(outFilePath);
 
-        /* Read BMP bmpHeader. */
+        /* Read BMP header. */
         _ = await inFileStream.ReadBlock();
 
-        /* Write unencrypted BMP bmpHeader to file. */
+        /* Write unencrypted BMP header to file. */
         outFileStream.Write(inFileStream.CurrentBlock.Span);
 
         inFileStream.BlockSize = BufferSize;

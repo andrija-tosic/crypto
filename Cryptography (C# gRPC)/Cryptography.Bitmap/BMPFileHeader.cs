@@ -1,4 +1,4 @@
-﻿namespace Cryptography.Ciphers;
+﻿namespace Cryptography.Bitmap;
 
 public struct BMPFileHeader
 {
