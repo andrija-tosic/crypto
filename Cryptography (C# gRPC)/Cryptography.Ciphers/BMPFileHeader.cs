@@ -50,7 +50,7 @@ public struct BMPFileHeader
     public static BMPFileHeader FromFileStream(FileStream fileStream)
     {
         var header = new BMPFileHeader();
-        
+
         using var binaryReader = new BinaryReader(fileStream);
 
         header.header = binaryReader.ReadBytes(2);

@@ -47,7 +47,6 @@ public class CipherUnitTest : IClassFixture<ServerFixture>
         Assert.Equal(sha1Before, sha1After);
     }
 
-
     [Theory]
     [InlineData(testFilesPath + "otp_example.jpg")]
     public async Task OneTimePad_Encrypt_Decrypt_Compare_SHA1(string inFilePath)
@@ -60,7 +59,7 @@ public class CipherUnitTest : IClassFixture<ServerFixture>
 
         CryptoClient::Cryptography.SHA1HashResult sha1Before = await RPC.SHA1HashFileAsync(this.serverFixture.Client, inFilePath);
         CryptoClient::Cryptography.SHA1HashResult sha1After = await RPC.SHA1HashFileAsync(this.serverFixture.Client, decryptedFilePath);
-        
+
         Assert.Equal(sha1Before, sha1After);
     }
 
@@ -70,12 +69,12 @@ public class CipherUnitTest : IClassFixture<ServerFixture>
     {
         (string encryptedFilePath, string decryptedFilePath) = GetEncryptedAndDecryptedFilePaths(inFilePath);
 
-        await RPC.EncryptXXTEAAsync(this.serverFixture.Client, inFilePath, encryptedFilePath, key, false);
-        await RPC.DecryptXXTEAAsync(this.serverFixture.Client, encryptedFilePath, decryptedFilePath, key, false);
+        await RPC.EncryptXXTEAAsync(this.serverFixture.Client, inFilePath, encryptedFilePath, key);
+        await RPC.DecryptXXTEAAsync(this.serverFixture.Client, encryptedFilePath, decryptedFilePath, key);
 
         CryptoClient::Cryptography.SHA1HashResult sha1Before = await RPC.SHA1HashFileAsync(this.serverFixture.Client, inFilePath);
         CryptoClient::Cryptography.SHA1HashResult sha1After = await RPC.SHA1HashFileAsync(this.serverFixture.Client, decryptedFilePath);
-        
+
         Assert.Equal(sha1Before, sha1After);
     }
 
@@ -85,8 +84,8 @@ public class CipherUnitTest : IClassFixture<ServerFixture>
     {
         (string encryptedFilePath, string decryptedFilePath) = GetEncryptedAndDecryptedFilePaths(inFilePath);
 
-        await RPC.EncryptXXTEAAsync(this.serverFixture.Client, inFilePath, encryptedFilePath, key, true);
-        await RPC.DecryptXXTEAAsync(this.serverFixture.Client, encryptedFilePath, decryptedFilePath, key, true);
+        await RPC.EncryptXXTEAParallelAsync(this.serverFixture.Client, inFilePath, encryptedFilePath, key);
+        await RPC.DecryptXXTEAParallelAsync(this.serverFixture.Client, encryptedFilePath, decryptedFilePath, key);
 
         CryptoClient::Cryptography.SHA1HashResult sha1Before = await RPC.SHA1HashFileAsync(this.serverFixture.Client, inFilePath);
         CryptoClient::Cryptography.SHA1HashResult sha1After = await RPC.SHA1HashFileAsync(this.serverFixture.Client, decryptedFilePath);
@@ -122,7 +121,7 @@ public class CipherUnitTest : IClassFixture<ServerFixture>
         return (encryptedFilePath, decryptedFilePath);
     }
 
-    public static  string GetPadFilePath(string inFilePath)
+    public static string GetPadFilePath(string inFilePath)
     {
         string dirPath = new FileInfo(inFilePath).Directory.FullName;
         string fileName = Path.GetFileNameWithoutExtension(inFilePath);

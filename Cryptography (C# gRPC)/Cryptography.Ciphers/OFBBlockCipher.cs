@@ -4,6 +4,7 @@ public class OFBBlockCipher : IDisposable
     private readonly IBlockCipher blockCipher;
 
     private byte[] outputFeedback;
+
     public OFBBlockCipher(IBlockCipher blockCipher, byte[] IV)
     {
         this.blockCipher = blockCipher;

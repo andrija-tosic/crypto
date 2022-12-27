@@ -1,6 +1,4 @@
-﻿using System.Threading;
-
-namespace Cryptography.Ciphers;
+﻿namespace Cryptography.Ciphers;
 public class XXTEA : IBlockCipher
 {
     private const uint Delta = 0x9E3779B9;
