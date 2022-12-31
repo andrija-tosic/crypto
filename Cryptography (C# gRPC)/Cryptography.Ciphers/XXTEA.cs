@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace Cryptography.Ciphers;
+﻿namespace Cryptography.Ciphers;
 public class XXTEA : IBlockCipher
 {
     private const uint Delta = 0x9E3779B9;
@@ -9,11 +7,10 @@ public class XXTEA : IBlockCipher
     private List<byte> lastBlockBuffer;
     private long messageLength;
     private long paddedMessageLength;
-    private long receivedBytes = 0;
     public int BlockBytes { get; set; }
     public byte[] Key { get { return this.key.ToByteArray(); } }
     private ByteBlockSplitter blockSplitter;
-
+    
     public XXTEA(byte[] key, long messageLength, int blockSize)
     {
         if (blockSize < 8)
@@ -30,7 +27,7 @@ public class XXTEA : IBlockCipher
 
         this.messageLength = messageLength;
         this.paddedMessageLength = this.messageLength + this.BlockBytes - 1;
-        this.paddedMessageLength -= (paddedMessageLength % this.BlockBytes);
+        this.paddedMessageLength -= this.paddedMessageLength % this.BlockBytes;
 
         this.lastBlockBuffer.AddRange(BitConverter.GetBytes(messageLength));
 
@@ -61,7 +58,7 @@ public class XXTEA : IBlockCipher
 
         var encryptedBytes = new List<byte>();
 
-        foreach (byte[] block in this.blockSplitter.EnumerateBlocks(data))
+        foreach (byte[] block in this.blockSplitter.SplitToBlocks(data))
         {
             uint[] res = block.ToUInt32Array();
             EncryptBlock(ref res, this.key);
@@ -79,11 +76,9 @@ public class XXTEA : IBlockCipher
             return data;
         }
 
-        this.receivedBytes += data.LongLength;
-
         var decryptedBytes = new List<byte>();
 
-        foreach (byte[] block in this.blockSplitter.EnumerateBlocks(data))
+        foreach (byte[] block in this.blockSplitter.SplitToBlocks(data))
         {
 
             uint[] res = block.ToUInt32Array();
@@ -94,6 +89,10 @@ public class XXTEA : IBlockCipher
             if (this.messageLength == -1)
             {
                 this.messageLength = BitConverter.ToInt64(currentBlock.AsSpan()[0..sizeof(long)]);
+
+                this.paddedMessageLength = this.messageLength + this.BlockBytes - 1;
+                this.paddedMessageLength -= this.paddedMessageLength % this.BlockBytes;
+
                 currentBlock = currentBlock[sizeof(long)..];
             }
 
@@ -124,7 +123,7 @@ public class XXTEA : IBlockCipher
     {
         /* Decrypt block and remove padding. */
 
-        long padLength = this.receivedBytes - sizeof(long) - this.messageLength; // sizeof(long) because of initial message length
+        long padLength = this.paddedMessageLength - sizeof(long) - this.messageLength;
 
         byte[] data = this.blockSplitter.Flush();
 
@@ -142,7 +141,6 @@ public class XXTEA : IBlockCipher
 
         return res;
     }
-
 
     public static void EncryptBlock(ref uint[] v, uint[] k)
     {
@@ -209,7 +207,7 @@ public class XXTEA : IBlockCipher
 
         var encryptedBytes = new List<byte>();
 
-        byte[][] blocks = this.blockSplitter.SplitToBlocks(data);
+        byte[][] blocks = this.blockSplitter.SplitToBlocks(data).ToArray();
 
         uint[][] blocksUInt32 = new uint[blocks.Length][];
 
@@ -218,24 +216,11 @@ public class XXTEA : IBlockCipher
             blocksUInt32[i] = blocks[i].ToUInt32Array();
         }
 
-        var threads = new Thread[numThreads];
-
-        for (int i = 0; i < blocksUInt32.Length; i++)
+        _ = Parallel.For(0, blocksUInt32.Length, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, i =>
         {
             int blockIndex = i;
-
-            threads[i] = new Thread(() =>
-            {
-                EncryptBlock(ref blocksUInt32[blockIndex], this.key);
-            });
-            threads[i].Start();
-        }
-
-
-        for (int i = 0; i < blocksUInt32.Length; i++)
-        {
-            threads[i].Join();
-        }
+            EncryptBlock(ref blocksUInt32[blockIndex], this.key);
+        });
 
         for (int i = 0; i < blocksUInt32.Length; i++)
         {
@@ -252,11 +237,9 @@ public class XXTEA : IBlockCipher
             return data;
         }
 
-        this.receivedBytes += data.LongLength;
-
         var decryptedBytes = new List<byte>();
 
-        byte[][] blocks = this.blockSplitter.SplitToBlocks(data);
+        byte[][] blocks = this.blockSplitter.SplitToBlocks(data).ToArray();
 
         uint[][] blocksUInt32 = new uint[blocks.Length][];
 
@@ -265,24 +248,11 @@ public class XXTEA : IBlockCipher
             blocksUInt32[i] = blocks[i].ToUInt32Array();
         }
 
-        var threads = new Thread[numThreads];
-
-        for (int i = 0; i < blocksUInt32.Length; i++)
+        _ = Parallel.For(0, blocksUInt32.Length, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, i =>
         {
             int blockIndex = i;
-
-            threads[i] = new Thread(() =>
-            {
-                DecryptBlock(ref blocksUInt32[blockIndex], this.key);
-            });
-            threads[i].Start();
-        }
-
-
-        for (int i = 0; i < blocksUInt32.Length; i++)
-        {
-            threads[i].Join();
-        }
+            DecryptBlock(ref blocksUInt32[blockIndex], this.key);
+        });
 
         for (int i = 0; i < blocksUInt32.Length; i++)
         {
@@ -292,6 +262,10 @@ public class XXTEA : IBlockCipher
         if (this.messageLength == -1)
         {
             this.messageLength = BitConverter.ToInt64(decryptedBytes.GetRange(0, sizeof(long)).ToArray());
+
+            this.paddedMessageLength = this.messageLength + this.BlockBytes - 1;
+            this.paddedMessageLength -= this.paddedMessageLength % this.BlockBytes;
+
             decryptedBytes = decryptedBytes.GetRange(sizeof(long), decryptedBytes.Count - sizeof(long));
         }
 

@@ -15,7 +15,7 @@ public class ByteBlockSplitter
         this.lastBlockBuffer.InsertRange(0, data);
     }
 
-    public IEnumerable<byte[]> EnumerateBlocks(byte[] data)
+    public IEnumerable<byte[]> SplitToBlocks(byte[] data)
     {
         if (data.Length != 0)
         {
@@ -34,26 +34,6 @@ public class ByteBlockSplitter
 
             this.lastBlockBuffer = blocks[^1].ToList();
         }
-    }
-
-    public byte[][] SplitToBlocks(byte[] data)
-    {
-        if (data.Length == 0)
-        {
-            return Array.Empty<byte[]>();
-        }
-
-        byte[] fullBuffer = new byte[this.lastBlockBuffer.Count + data.Length];
-
-        /* Prepend the last leftover bytes to new data. */
-        Buffer.BlockCopy(this.lastBlockBuffer.ToArray(), 0, fullBuffer, 0, this.lastBlockBuffer.Count);
-        Buffer.BlockCopy(data, 0, fullBuffer, this.lastBlockBuffer.Count, data.Length);
-
-        byte[][] blocks = fullBuffer.SplitIntoBlocksOfSize(this.blockSize);
-
-        this.lastBlockBuffer = blocks[^1].ToList();
-
-        return blocks[..^1];
     }
 
     public byte[] Flush()

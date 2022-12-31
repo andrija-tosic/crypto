@@ -341,7 +341,6 @@ public static class RPC
         await response;
     }
 
-
     public static async Task DecryptXXTEAParallelAsync(Cryptography.CryptographyClient client, string inFilePath, string outFilePath, string key)
     {
         using BlockFileStreamReader inFileStream = new(inFilePath, ParallelThreadCount * BufferSize);
@@ -373,7 +372,6 @@ public static class RPC
         await streamingCall.RequestStream.CompleteAsync();
         await response;
     }
-
 
     public static async Task EncryptXXTEAOFBAsync(Cryptography.CryptographyClient client, string inFilePath, string outFilePath, string key, string IV)
     {
@@ -553,6 +551,5 @@ public static class RPC
             throw;
         }
     }
-
 
 }

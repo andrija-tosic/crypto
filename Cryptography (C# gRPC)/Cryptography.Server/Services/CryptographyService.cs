@@ -172,7 +172,7 @@ public class CryptographyService : Cryptography.CryptographyBase
 
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
         int threadCount = requestStream.Current.ThreadCount;
-       
+
         long messageLength = requestStream.Current.MessageLength;
         XXTEA xxtea = new(key, messageLength, BlockSize);
 

@@ -1,6 +1,4 @@
-﻿#define CLEAN
-
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
 
 namespace Cryptography.Ciphers;
@@ -78,40 +76,18 @@ public class SHA1 : IDisposable
 
     public void ProcessBuffer(byte[] buffer)
     {
-#if CLEAN
-        foreach (byte[] block in this.blockSplitter.EnumerateBlocks(buffer))
+        foreach (byte[] block in this.blockSplitter.SplitToBlocks(buffer))
         {
             this.HashBlock(block.ToList());
             this.l += BlockBytes;
         }
+
         return;
-#else
-        byte[] fullBuffer = new byte[this.lastBlockBuffer.Count + buffer.Length];
-
-        /* Prepend the last leftover bytes to new data. */
-        Buffer.BlockCopy(this.lastBlockBuffer.ToArray(), 0, fullBuffer, 0, this.lastBlockBuffer.Count);
-        Buffer.BlockCopy(buffer, 0, fullBuffer, this.lastBlockBuffer.Count, buffer.Length);
-
-        byte[][] blocks = fullBuffer.SplitIntoBlocksOfSize(BlockBytes);
-
-        /* Last block may be of length < 512b. */
-        /* Process all of the 512b blocks. */
-        for (int i = 0; i < blocks.Length - 1; i++)
-        {
-            this.HashBlock(blocks[i].ToList());
-            this.l += BlockBytes;
-        }
-
-        /* Save the block of length <= 512b. */
-        this.lastBlockBuffer = blocks[^1].ToList();
-
-#endif
     }
 
     public void Finish()
     {
-#if CLEAN
-        List<byte> remainingBytes = this.blockSplitter.Flush().ToList();
+        var remainingBytes = this.blockSplitter.Flush().ToList();
 
         this.l += (ulong)remainingBytes.Count;
 
@@ -122,18 +98,6 @@ public class SHA1 : IDisposable
         }
 
         this.FinalPadMessage(remainingBytes.ToList());
-#else
-
-        this.l += (ulong)this.lastBlockBuffer.Count;
-
-        if (this.lastBlockBuffer.Count == BlockBytes)
-        {
-            this.HashBlock(this.lastBlockBuffer);
-            this.lastBlockBuffer.Clear();
-        }
-
-        this.FinalPadMessage(this.lastBlockBuffer);
-#endif
     }
 
     public string HashHexString
@@ -209,12 +173,12 @@ public class SHA1 : IDisposable
             block, process it, and then continue padding into a second
             block.
         */
-        if (message.Count > (int)BlockBytes - spaceForLengthAppend)
+        if (message.Count > BlockBytes - spaceForLengthAppend)
         {
             /* Edge case: size of block is between 56 and 64 bytes. One more block transform is needed. */
             /* Both blocks are padded to 64 bytes. */
 
-            while (message.Count < (int)BlockBytes)
+            while (message.Count < BlockBytes)
             {
                 message.Add(0x00);
             }
@@ -222,7 +186,7 @@ public class SHA1 : IDisposable
             this.HashBlock(message);
 
             /* Processing final block. Vector is 64 bytes at this point. */
-            message.RemoveRange((int)BlockBytes - spaceForLengthAppend, message.Count - ((int)BlockBytes - spaceForLengthAppend));
+            message.RemoveRange(BlockBytes - spaceForLengthAppend, message.Count - (BlockBytes - spaceForLengthAppend));
 
             for (int i = 0; i < message.Count; i++)
             {
@@ -237,7 +201,7 @@ public class SHA1 : IDisposable
                 are reserved for the length l of the original message.
             */
 
-            while (message.Count < (int)BlockBytes - spaceForLengthAppend)
+            while (message.Count < BlockBytes - spaceForLengthAppend)
             {
                 message.Add(0x00);
             }

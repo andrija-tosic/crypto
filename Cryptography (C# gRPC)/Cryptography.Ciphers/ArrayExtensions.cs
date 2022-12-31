@@ -35,7 +35,6 @@ internal static class ArrayExtensions
         return blocks;
     }
 
-
     public static byte[] ToByteArray(this uint[] data)
     {
         byte[] byteArray = new byte[data.Length * sizeof(uint)];
