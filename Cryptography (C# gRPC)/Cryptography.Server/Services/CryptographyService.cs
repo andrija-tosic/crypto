@@ -8,6 +8,7 @@ namespace Cryptography.Server.Services;
 
 public class CryptographyService : Cryptography.CryptographyBase
 {
+    public const int BlockSize = 1024 * 1024;
     public override async Task<SHA1HashResult> ComputeSHA1Hash(IAsyncStreamReader<ByteArray> requestStream, ServerCallContext context)
     {
         using SHA1 sha1 = new();
@@ -108,7 +109,8 @@ public class CryptographyService : Cryptography.CryptographyBase
         _ = await requestStream.MoveNext();
 
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
-        XXTEA xxtea = new(key);
+        long messageLength = requestStream.Current.MessageLength;
+        XXTEA xxtea = new(key, messageLength, BlockSize);
 
         do
         {
@@ -129,62 +131,16 @@ public class CryptographyService : Cryptography.CryptographyBase
         _ = await requestStream.MoveNext();
 
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
-        XXTEA xxtea = new(key);
-
-        do
-        {
-            byte[] toEncrypt = requestStream.Current.Bytes.ToByteArray();
-            byte[] encryptedBytes = xxtea.Decrypt(toEncrypt);
-
-            ByteArray res = new()
-            {
-                Bytes = ByteString.CopyFrom(encryptedBytes)
-            };
-
-            await responseStream.WriteAsync(res);
-        } while (await requestStream.MoveNext());
-    }
-
-    public override async Task EncryptXXTEAOFB(IAsyncStreamReader<XXTEAOFBRequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
-    {
-        _ = await requestStream.MoveNext();
-
-        byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
-        byte[] IV = requestStream.Current.IV.ToByteArray();
-
-        using OFBBlockCipher xxteaOfb = new(new XXTEA(key), IV);
-
-        do
-        {
-            byte[] toEncrypt = requestStream.Current.Bytes.ToByteArray();
-            byte[] encryptedBytes = xxteaOfb.Encrypt(toEncrypt);
-
-            ByteArray res = new()
-            {
-                Bytes = ByteString.CopyFrom(encryptedBytes)
-            };
-
-            await responseStream.WriteAsync(res);
-        } while (await requestStream.MoveNext());
-    }
-
-    public override async Task DecryptXXTEAOFB(IAsyncStreamReader<XXTEAOFBRequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
-    {
-        _ = await requestStream.MoveNext();
-
-        byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
-        byte[] IV = requestStream.Current.IV.ToByteArray();
-
-        using OFBBlockCipher xxteaOfb = new(new XXTEA(key), IV);
+        XXTEA xxtea = new(key, BlockSize);
 
         do
         {
             byte[] toDecrypt = requestStream.Current.Bytes.ToByteArray();
-            byte[] encryptedBytes = xxteaOfb.Decrypt(toDecrypt);
+            byte[] decryptedBytes = xxtea.Decrypt(toDecrypt);
 
             ByteArray res = new()
             {
-                Bytes = ByteString.CopyFrom(encryptedBytes)
+                Bytes = ByteString.CopyFrom(decryptedBytes)
             };
 
             await responseStream.WriteAsync(res);
@@ -197,8 +153,9 @@ public class CryptographyService : Cryptography.CryptographyBase
 
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
         int threadCount = requestStream.Current.ThreadCount;
-
-        XXTEA xxtea = new(key);
+       
+        long messageLength = requestStream.Current.MessageLength;
+        XXTEA xxtea = new(key, messageLength, BlockSize);
 
         do
         {
@@ -212,7 +169,6 @@ public class CryptographyService : Cryptography.CryptographyBase
 
             await responseStream.WriteAsync(res);
         } while (await requestStream.MoveNext());
-
     }
 
     public override async Task DecryptXXTEAParallel(IAsyncStreamReader<XXTEAParallelRequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
@@ -222,7 +178,7 @@ public class CryptographyService : Cryptography.CryptographyBase
         byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
         int threadCount = requestStream.Current.ThreadCount;
 
-        XXTEA xxtea = new(key);
+        XXTEA xxtea = new(key, BlockSize);
 
         do
         {
@@ -236,6 +192,74 @@ public class CryptographyService : Cryptography.CryptographyBase
 
             await responseStream.WriteAsync(res);
         } while (await requestStream.MoveNext());
-
     }
+
+    public override async Task EncryptXXTEAOFB(IAsyncStreamReader<XXTEAOFBRequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
+    {
+        _ = await requestStream.MoveNext();
+
+        byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
+        byte[] IV = requestStream.Current.IV.ToByteArray();
+
+        using OFBBlockCipher xxteaOfb = new(new XXTEA(key, IV.Length), IV);
+
+        do
+        {
+            byte[] toEncrypt = requestStream.Current.Bytes.ToByteArray();
+
+            foreach (byte[] encryptedBlock in xxteaOfb.Encrypt(toEncrypt))
+            {
+                ByteArray res = new()
+                {
+                    Bytes = ByteString.CopyFrom(encryptedBlock)
+                };
+
+                await responseStream.WriteAsync(res);
+            }
+        } while (await requestStream.MoveNext());
+
+        byte[] final = xxteaOfb.Finish();
+
+        ByteArray finalBytes = new()
+        {
+            Bytes = ByteString.CopyFrom(final)
+        };
+
+        await responseStream.WriteAsync(finalBytes);
+    }
+
+    public override async Task DecryptXXTEAOFB(IAsyncStreamReader<XXTEAOFBRequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
+    {
+        _ = await requestStream.MoveNext();
+
+        byte[] key = Encoding.ASCII.GetBytes(requestStream.Current.Key);
+        byte[] IV = requestStream.Current.IV.ToByteArray();
+
+        using OFBBlockCipher xxteaOfb = new(new XXTEA(key, IV.Length), IV);
+
+        do
+        {
+            byte[] toDecrypt = requestStream.Current.Bytes.ToByteArray();
+
+            foreach (byte[] encryptedBlock in xxteaOfb.Decrypt(toDecrypt))
+            {
+                ByteArray res = new()
+                {
+                    Bytes = ByteString.CopyFrom(encryptedBlock)
+                };
+
+                await responseStream.WriteAsync(res);
+            }
+        } while (await requestStream.MoveNext());
+
+        byte[] final = xxteaOfb.Finish();
+
+        ByteArray finalBytes = new()
+        {
+            Bytes = ByteString.CopyFrom(final)
+        };
+
+        await responseStream.WriteAsync(finalBytes);
+    }
+
 }

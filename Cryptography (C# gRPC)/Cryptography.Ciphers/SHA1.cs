@@ -10,7 +10,7 @@ https://www.rfc-editor.org/rfc/rfc3174
 
 public class SHA1 : IDisposable
 {
-    private List<byte> lastBlockBuffer = new((int)BlockBytes);
+    private List<byte> lastBlockBuffer = new(BlockBytes);
 
     /* Digest. */
     private readonly uint[] H = new uint[5]
@@ -22,8 +22,8 @@ public class SHA1 : IDisposable
         0xC3D2E1F0
     };
     private ulong l = 0;
-    private const uint WordsPerBlock = 16; // Word = 32-bit.
-    private const uint BlockBytes = WordsPerBlock * 4;
+    private const int WordsPerBlock = 16; // Word = 32-bit.
+    private const int BlockBytes = WordsPerBlock * 4;
 
     /*
         A sequence of constant words K(0), K(1), ... , K(79) is used in the
@@ -75,27 +75,33 @@ public class SHA1 : IDisposable
 
     public void ProcessBuffer(byte[] buffer)
     {
-        byte[][] blocks = buffer.SplitIntoBlocksOfSize((int)BlockBytes);
+        byte[] fullBuffer = new byte[this.lastBlockBuffer.Count + buffer.Length];
 
-        for (int i = 0; i < blocks.Length; i++)
+        /* Prepend the last leftover bytes to new data. */
+        Buffer.BlockCopy(this.lastBlockBuffer.ToArray(), 0, fullBuffer, 0, this.lastBlockBuffer.Count);
+        Buffer.BlockCopy(buffer, 0, fullBuffer, this.lastBlockBuffer.Count, buffer.Length);
+
+        byte[][] blocks = fullBuffer.SplitIntoBlocksOfSize(BlockBytes);
+
+        /* Last block may be of length < 512b. */
+        /* Process all of the 512b blocks. */
+        for (int i = 0; i < blocks.Length - 1; i++)
         {
-            this.lastBlockBuffer = blocks[i].ToList();
-
-            this.l += (ulong)blocks[i].Length;
-
-            if (blocks[i].Length < BlockBytes)
-            {
-                break;
-            }
-
-            this.HashBlock(this.lastBlockBuffer);
+            this.HashBlock(blocks[i].ToList());
+            this.l += BlockBytes;
         }
+
+        /* Save the block of length <= 512b. */
+        this.lastBlockBuffer = blocks[^1].ToList();
     }
 
     public void Finish()
     {
-        if (this.lastBlockBuffer.Count == (int)BlockBytes)
+        this.l += (ulong)this.lastBlockBuffer.Count;
+
+        if (this.lastBlockBuffer.Count == BlockBytes)
         {
+            this.HashBlock(this.lastBlockBuffer);
             this.lastBlockBuffer.Clear();
         }
 

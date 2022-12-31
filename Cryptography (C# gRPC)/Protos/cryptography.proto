@@ -47,16 +47,19 @@ message OneTimePadResult {
 message XXTEARequest {
 	bytes bytes = 1;
 	string key = 2;
+	int64 message_length = 3;
 }
 
 message XXTEAParallelRequest {
 	bytes bytes = 1;
 	string key = 2;
 	int32 thread_count = 3;
+	int64 message_length = 4;
 }
 
 message XXTEAOFBRequest {
 	bytes bytes = 1;
 	string key = 2;
 	bytes IV  = 3;
+	int64 message_length = 4;
 }

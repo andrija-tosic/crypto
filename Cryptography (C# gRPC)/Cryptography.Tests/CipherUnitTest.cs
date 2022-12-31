@@ -64,7 +64,7 @@ public class CipherUnitTest : IClassFixture<ServerFixture>
     }
 
     [Theory]
-    [InlineData(testFilesPath + "xxtea_example.zip", "12345678")]
+    [InlineData(testFilesPath + "xxtea_example.zip", "1234567812345678")]
     public async Task XXTEA_Encrypt_Decrypt_Compare_SHA1(string inFilePath, string key)
     {
         (string encryptedFilePath, string decryptedFilePath) = GetEncryptedAndDecryptedFilePaths(inFilePath);
@@ -79,7 +79,7 @@ public class CipherUnitTest : IClassFixture<ServerFixture>
     }
 
     [Theory]
-    [InlineData(testFilesPath + "xxtea_parallel_example.zip", "12345678")]
+    [InlineData(testFilesPath + "xxtea_parallel_example.zip", "1234567812345678")]
     public async Task XXTEAParallel_Encrypt_Decrypt_Compare_SHA1(string inFilePath, string key)
     {
         (string encryptedFilePath, string decryptedFilePath) = GetEncryptedAndDecryptedFilePaths(inFilePath);
@@ -94,7 +94,7 @@ public class CipherUnitTest : IClassFixture<ServerFixture>
     }
 
     [Theory]
-    [InlineData(testFilesPath + "xxtea_ofb_example.jpg", "12345678", "12345678")]
+    [InlineData(testFilesPath + "xxtea_ofb_example.jpg", "1234567812345678", "12345678")]
     public async Task XXTEAOFB_Encrypt_Decrypt_Compare_SHA1(string inFilePath, string key, string IV)
     {
         (string encryptedFilePath, string decryptedFilePath) = GetEncryptedAndDecryptedFilePaths(inFilePath);

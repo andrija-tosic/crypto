@@ -32,7 +32,7 @@ public class ServerFixture : IDisposable
             Console.WriteLine("Server process failed to start");
         }
 
-        Task.Delay(TimeSpan.FromSeconds(5)).Wait();
+        Task.Delay(TimeSpan.FromSeconds(7)).Wait();
 
         this.channel = GrpcChannel.ForAddress("http://localhost:5150", new GrpcChannelOptions
         {
