@@ -10,7 +10,7 @@ public class XXTEA : IBlockCipher
     public int BlockBytes { get; set; }
     public byte[] Key { get { return this.key.ToByteArray(); } }
     private ByteBlockSplitter blockSplitter;
-    
+
     public XXTEA(byte[] key, long messageLength, int blockSize)
     {
         if (blockSize < 8)
@@ -26,7 +26,7 @@ public class XXTEA : IBlockCipher
         this.lastBlockBuffer = new List<byte>(this.BlockBytes);
 
         this.messageLength = messageLength;
-        this.paddedMessageLength = this.messageLength + this.BlockBytes - 1;
+        this.paddedMessageLength = this.messageLength + sizeof(long) + this.BlockBytes - 1;
         this.paddedMessageLength -= this.paddedMessageLength % this.BlockBytes;
 
         this.lastBlockBuffer.AddRange(BitConverter.GetBytes(messageLength));
@@ -90,7 +90,7 @@ public class XXTEA : IBlockCipher
             {
                 this.messageLength = BitConverter.ToInt64(currentBlock.AsSpan()[0..sizeof(long)]);
 
-                this.paddedMessageLength = this.messageLength + this.BlockBytes - 1;
+                this.paddedMessageLength = this.messageLength + sizeof(long) + this.BlockBytes - 1;
                 this.paddedMessageLength -= this.paddedMessageLength % this.BlockBytes;
 
                 currentBlock = currentBlock[sizeof(long)..];
@@ -108,6 +108,11 @@ public class XXTEA : IBlockCipher
 
         byte[] data = this.blockSplitter.Flush();
 
+        if (data.Length == 0)
+        {
+            return data;
+        }
+
         uint[] v = new uint[this.BlockBytes / sizeof(uint)];
 
         Buffer.BlockCopy(data, 0, v, 0, data.Length);
@@ -123,7 +128,16 @@ public class XXTEA : IBlockCipher
     {
         /* Decrypt block and remove padding. */
 
-        long padLength = this.paddedMessageLength - sizeof(long) - this.messageLength;
+        long padLength;
+
+        if (this.paddedMessageLength == this.messageLength)
+        {
+            return Array.Empty<byte>();
+        }
+        else
+        {
+            padLength = this.paddedMessageLength - sizeof(long) - this.messageLength;
+        }
 
         byte[] data = this.blockSplitter.Flush();
 
@@ -263,7 +277,7 @@ public class XXTEA : IBlockCipher
         {
             this.messageLength = BitConverter.ToInt64(decryptedBytes.GetRange(0, sizeof(long)).ToArray());
 
-            this.paddedMessageLength = this.messageLength + this.BlockBytes - 1;
+            this.paddedMessageLength = this.messageLength + sizeof(long) + this.BlockBytes - 1;
             this.paddedMessageLength -= this.paddedMessageLength % this.BlockBytes;
 
             decryptedBytes = decryptedBytes.GetRange(sizeof(long), decryptedBytes.Count - sizeof(long));
