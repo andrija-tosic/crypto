@@ -8,7 +8,7 @@ namespace Cryptography.Client;
 
 public static class RPC
 {
-    private const int BufferSize = 1 + 1024 * 1024;
+    private const int BufferSize = 1024 * 1024;
     private static readonly int ParallelThreadCount = Environment.ProcessorCount;
 
     public static async Task<SHA1HashResult> SHA1HashFileAsync(Cryptography.CryptographyClient client, string filePath)

@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿#define CLEAN
+
+using System.Diagnostics;
 using System.Text;
 
 namespace Cryptography.Ciphers;
@@ -11,6 +13,7 @@ https://www.rfc-editor.org/rfc/rfc3174
 public class SHA1 : IDisposable
 {
     private List<byte> lastBlockBuffer = new(BlockBytes);
+    private ByteBlockSplitter blockSplitter = new(BlockBytes);
 
     /* Digest. */
     private readonly uint[] H = new uint[5]
@@ -75,6 +78,14 @@ public class SHA1 : IDisposable
 
     public void ProcessBuffer(byte[] buffer)
     {
+#if CLEAN
+        foreach (byte[] block in this.blockSplitter.EnumerateBlocks(buffer))
+        {
+            this.HashBlock(block.ToList());
+            this.l += BlockBytes;
+        }
+        return;
+#else
         byte[] fullBuffer = new byte[this.lastBlockBuffer.Count + buffer.Length];
 
         /* Prepend the last leftover bytes to new data. */
@@ -93,10 +104,26 @@ public class SHA1 : IDisposable
 
         /* Save the block of length <= 512b. */
         this.lastBlockBuffer = blocks[^1].ToList();
+
+#endif
     }
 
     public void Finish()
     {
+#if CLEAN
+        List<byte> remainingBytes = this.blockSplitter.Flush().ToList();
+
+        this.l += (ulong)remainingBytes.Count;
+
+        if (remainingBytes.Count == BlockBytes)
+        {
+            this.HashBlock(remainingBytes);
+            remainingBytes.Clear();
+        }
+
+        this.FinalPadMessage(remainingBytes.ToList());
+#else
+
         this.l += (ulong)this.lastBlockBuffer.Count;
 
         if (this.lastBlockBuffer.Count == BlockBytes)
@@ -106,6 +133,7 @@ public class SHA1 : IDisposable
         }
 
         this.FinalPadMessage(this.lastBlockBuffer);
+#endif
     }
 
     public string HashHexString

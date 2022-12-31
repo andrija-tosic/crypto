@@ -124,6 +124,15 @@ public class CryptographyService : Cryptography.CryptographyBase
 
             await responseStream.WriteAsync(res);
         } while (await requestStream.MoveNext());
+
+        byte[] last = xxtea.FinishEncryption();
+
+        ByteArray lastByteArray = new()
+        {
+            Bytes = ByteString.CopyFrom(last)
+        };
+
+        await responseStream.WriteAsync(lastByteArray);
     }
 
     public override async Task DecryptXXTEA(IAsyncStreamReader<XXTEARequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
@@ -145,6 +154,16 @@ public class CryptographyService : Cryptography.CryptographyBase
 
             await responseStream.WriteAsync(res);
         } while (await requestStream.MoveNext());
+
+        byte[] last = xxtea.FinishDecryption();
+
+        ByteArray lastByteArray = new()
+        {
+            Bytes = ByteString.CopyFrom(last)
+        };
+
+        await responseStream.WriteAsync(lastByteArray);
+
     }
 
     public override async Task EncryptXXTEAParallel(IAsyncStreamReader<XXTEAParallelRequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
@@ -169,6 +188,15 @@ public class CryptographyService : Cryptography.CryptographyBase
 
             await responseStream.WriteAsync(res);
         } while (await requestStream.MoveNext());
+
+        byte[] last = xxtea.FinishEncryption();
+
+        ByteArray lastByteArray = new()
+        {
+            Bytes = ByteString.CopyFrom(last)
+        };
+
+        await responseStream.WriteAsync(lastByteArray);
     }
 
     public override async Task DecryptXXTEAParallel(IAsyncStreamReader<XXTEAParallelRequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)
@@ -192,6 +220,15 @@ public class CryptographyService : Cryptography.CryptographyBase
 
             await responseStream.WriteAsync(res);
         } while (await requestStream.MoveNext());
+
+        byte[] last = xxtea.FinishDecryption();
+
+        ByteArray lastByteArray = new()
+        {
+            Bytes = ByteString.CopyFrom(last)
+        };
+
+        await responseStream.WriteAsync(lastByteArray);
     }
 
     public override async Task EncryptXXTEAOFB(IAsyncStreamReader<XXTEAOFBRequest> requestStream, IServerStreamWriter<ByteArray> responseStream, ServerCallContext context)

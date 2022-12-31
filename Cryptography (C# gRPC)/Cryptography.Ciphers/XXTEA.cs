@@ -12,6 +12,7 @@ public class XXTEA : IBlockCipher
     private long receivedBytes = 0;
     public int BlockBytes { get; set; }
     public byte[] Key { get { return this.key.ToByteArray(); } }
+    private ByteBlockSplitter blockSplitter;
 
     public XXTEA(byte[] key, long messageLength, int blockSize)
     {
@@ -32,6 +33,9 @@ public class XXTEA : IBlockCipher
         this.paddedMessageLength -= (paddedMessageLength % this.BlockBytes);
 
         this.lastBlockBuffer.AddRange(BitConverter.GetBytes(messageLength));
+
+        this.blockSplitter = new(this.BlockBytes);
+        this.blockSplitter.PrependData(BitConverter.GetBytes(messageLength));
     }
 
     public XXTEA(byte[] key, int blockSize)
@@ -44,6 +48,8 @@ public class XXTEA : IBlockCipher
         this.lastBlockBuffer = new List<byte>(this.BlockBytes);
 
         this.messageLength = -1;
+
+        this.blockSplitter = new(this.BlockBytes);
     }
 
     public byte[] Encrypt(byte[] data)
@@ -53,57 +59,17 @@ public class XXTEA : IBlockCipher
             return data;
         }
 
-        this.receivedBytes += data.LongLength;
+        var encryptedBytes = new List<byte>();
 
-        byte[] fullBuffer = new byte[this.lastBlockBuffer.Count + data.Length];
-
-        /* Prepend the last leftover bytes to new data. */
-        Buffer.BlockCopy(this.lastBlockBuffer.ToArray(), 0, fullBuffer, 0, this.lastBlockBuffer.Count);
-        Buffer.BlockCopy(data, 0, fullBuffer, this.lastBlockBuffer.Count, data.Length);
-
-        byte[][] blocks = fullBuffer.SplitIntoBlocksOfSize(this.BlockBytes);
-
-        int fullSizedBlocksCount;
-
-        if (blocks[^1].Length == this.BlockBytes)
+        foreach (byte[] block in this.blockSplitter.EnumerateBlocks(data))
         {
-            fullSizedBlocksCount = blocks.Length;
-            this.lastBlockBuffer.Clear();
-        }
-        else
-        {
-            fullSizedBlocksCount = blocks.Length - 1;
-
-            /* Save the block of length < BlockSize. */
-            this.lastBlockBuffer = blocks[^1].ToList();
-        }
-
-        byte[] encryptedBytes = new byte[this.BlockBytes * fullSizedBlocksCount];
-
-        /* Last block may be of length < BlockSize. */
-        /* Process all of the BlockSize blocks. */
-        for (int i = 0; i < fullSizedBlocksCount; i++)
-        {
-            Debug.Assert(blocks[i].Length == this.BlockBytes);
-
-            uint[] res = blocks[i].ToUInt32Array();
+            uint[] res = block.ToUInt32Array();
             EncryptBlock(ref res, this.key);
 
-            Buffer.BlockCopy(res, 0, encryptedBytes, i * this.BlockBytes, res.Length * sizeof(uint));
+            encryptedBytes.AddRange(res.ToByteArray());
         }
 
-        if (this.receivedBytes == this.messageLength)
-        {
-            byte[] lastData = this.FinishEncryption();
-            byte[] res = new byte[this.BlockBytes * fullSizedBlocksCount + lastData.Length];
-
-            Buffer.BlockCopy(encryptedBytes, 0, res, 0, encryptedBytes.Length);
-            Buffer.BlockCopy(lastData, 0, res, this.BlockBytes * fullSizedBlocksCount, lastData.Length);
-
-            return res;
-        }
-
-        return encryptedBytes;
+        return encryptedBytes.ToArray();
     }
 
     public byte[] Decrypt(byte[] data)
@@ -115,74 +81,35 @@ public class XXTEA : IBlockCipher
 
         this.receivedBytes += data.LongLength;
 
-        byte[] fullBuffer = new byte[this.lastBlockBuffer.Count + data.Length];
+        var decryptedBytes = new List<byte>();
 
-        /* Prepend the last leftover bytes to new data. */
-        Buffer.BlockCopy(this.lastBlockBuffer.ToArray(), 0, fullBuffer, 0, this.lastBlockBuffer.Count);
-        Buffer.BlockCopy(data, 0, fullBuffer, this.lastBlockBuffer.Count, data.Length);
-
-        byte[][] blocks = fullBuffer.SplitIntoBlocksOfSize(this.BlockBytes);
-
-        int fullSizedBlocksCount = blocks.Length - 1;
-
-        if (this.receivedBytes == this.paddedMessageLength || blocks[^1].Length < this.BlockBytes)
+        foreach (byte[] block in this.blockSplitter.EnumerateBlocks(data))
         {
-            this.lastBlockBuffer = blocks[^1].ToList();
-        }
-        else
-        {
-            fullSizedBlocksCount = blocks.Length;
-            this.lastBlockBuffer.Clear();
-        }
 
-        byte[] decryptedBytes = new byte[this.BlockBytes * fullSizedBlocksCount];
-
-        /* Last block may be of length < BlockSize. */
-        /* Process all of the BlockSize blocks. */
-        for (int i = 0; i < fullSizedBlocksCount; i++)
-        {
-            Debug.Assert(blocks[i].Length == this.BlockBytes);
-
-            uint[] res = blocks[i].ToUInt32Array();
+            uint[] res = block.ToUInt32Array();
             DecryptBlock(ref res, this.key);
 
-            Buffer.BlockCopy(res, 0, decryptedBytes, i * this.BlockBytes, res.Length * sizeof(uint));
+            byte[] currentBlock = res.ToByteArray();
+
+            if (this.messageLength == -1)
+            {
+                this.messageLength = BitConverter.ToInt64(currentBlock.AsSpan()[0..sizeof(long)]);
+                currentBlock = currentBlock[sizeof(long)..];
+            }
+
+            decryptedBytes.AddRange(currentBlock);
         }
 
-        if (this.receivedBytes == this.paddedMessageLength)
-        {
-            byte[] lastData = this.FinishDecryption();
-            byte[] res = new byte[this.BlockBytes * fullSizedBlocksCount + lastData.Length];
-
-            Buffer.BlockCopy(decryptedBytes, 0, res, 0, decryptedBytes.Length);
-            Buffer.BlockCopy(lastData, 0, res, this.BlockBytes * fullSizedBlocksCount, lastData.Length);
-
-            return res;
-        }
-
-        if (decryptedBytes.Length >= sizeof(long) && this.messageLength == -1)
-        {
-            byte[] messageLengthBytes = decryptedBytes[0..sizeof(long)];
-
-            /* Remove message length from message. */
-            decryptedBytes = decryptedBytes[sizeof(long)..];
-
-            this.messageLength = BitConverter.ToInt64(messageLengthBytes);
-
-            this.paddedMessageLength = this.messageLength + this.BlockBytes - 1;
-            this.paddedMessageLength -= (this.paddedMessageLength % this.BlockBytes);
-        }
-
-        return decryptedBytes;
+        return decryptedBytes.ToArray();
     }
 
-    private byte[] FinishEncryption()
+    public byte[] FinishEncryption()
     {
         /* Pad to block size and encrypt. */
 
-        uint[] v = new uint[this.BlockBytes / sizeof(uint)];
+        byte[] data = this.blockSplitter.Flush();
 
-        byte[] data = this.lastBlockBuffer.ToArray();
+        uint[] v = new uint[this.BlockBytes / sizeof(uint)];
 
         Buffer.BlockCopy(data, 0, v, 0, data.Length);
 
@@ -193,13 +120,13 @@ public class XXTEA : IBlockCipher
         return v.ToByteArray();
     }
 
-    private byte[] FinishDecryption()
+    public byte[] FinishDecryption()
     {
-        /* DecryptBlock and remove padding. */
+        /* Decrypt block and remove padding. */
 
         long padLength = this.receivedBytes - sizeof(long) - this.messageLength; // sizeof(long) because of initial message length
 
-        byte[] data = this.lastBlockBuffer.ToArray();
+        byte[] data = this.blockSplitter.Flush();
 
         uint[] v = new uint[this.BlockBytes / sizeof(uint)];
 
@@ -280,73 +207,42 @@ public class XXTEA : IBlockCipher
             return data;
         }
 
-        this.receivedBytes += data.LongLength;
+        var encryptedBytes = new List<byte>();
 
-        byte[] fullBuffer = new byte[this.lastBlockBuffer.Count + data.Length];
+        byte[][] blocks = this.blockSplitter.SplitToBlocks(data);
 
-        /* Prepend the last leftover bytes to new data. */
-        Buffer.BlockCopy(this.lastBlockBuffer.ToArray(), 0, fullBuffer, 0, this.lastBlockBuffer.Count);
-        Buffer.BlockCopy(data, 0, fullBuffer, this.lastBlockBuffer.Count, data.Length);
+        uint[][] blocksUInt32 = new uint[blocks.Length][];
 
-        byte[] leftOver = fullBuffer[(fullBuffer.Length - fullBuffer.Length % this.BlockBytes)..];
-
-        uint[][] blocks = fullBuffer.SplitIntoUInt32BlocksOfSize(this.BlockBytes);
-
-        int fullSizedBlocksCount;
-
-        if (leftOver.Length == 0)
+        for (int i = 0; i < blocks.Length; i++)
         {
-            fullSizedBlocksCount = blocks.Length;
-            this.lastBlockBuffer.Clear();
-        }
-        else
-        {
-            fullSizedBlocksCount = blocks.Length - 1;
-
-            /* Save the block of length < BlockSize. */
-            this.lastBlockBuffer = leftOver.ToList();
+            blocksUInt32[i] = blocks[i].ToUInt32Array();
         }
 
-        byte[] encryptedBytes = new byte[this.BlockBytes * fullSizedBlocksCount];
-
-        /* Last block may be of length < BlockSize. */
-        /* Process all of the BlockSize blocks. */
         var threads = new Thread[numThreads];
 
-        for (int i = 0; i < fullSizedBlocksCount; i++)
+        for (int i = 0; i < blocksUInt32.Length; i++)
         {
             int blockIndex = i;
 
             threads[i] = new Thread(() =>
             {
-                EncryptBlock(ref blocks[blockIndex], this.key);
-
+                EncryptBlock(ref blocksUInt32[blockIndex], this.key);
             });
             threads[i].Start();
         }
 
-        for (int i = 0; i < fullSizedBlocksCount; i++)
+
+        for (int i = 0; i < blocksUInt32.Length; i++)
         {
             threads[i].Join();
         }
 
-        for (int i = 0; i < fullSizedBlocksCount; i++)
+        for (int i = 0; i < blocksUInt32.Length; i++)
         {
-            Buffer.BlockCopy(blocks[i], 0, encryptedBytes, i * this.BlockBytes, blocks[i].Length * sizeof(uint));
+            encryptedBytes.AddRange(blocksUInt32[i].ToByteArray());
         }
 
-        if (this.receivedBytes == this.messageLength)
-        {
-            byte[] lastData = this.FinishEncryption();
-            byte[] res = new byte[this.BlockBytes * fullSizedBlocksCount + lastData.Length];
-
-            Buffer.BlockCopy(encryptedBytes, 0, res, 0, encryptedBytes.Length);
-            Buffer.BlockCopy(lastData, 0, res, this.BlockBytes * fullSizedBlocksCount, lastData.Length);
-
-            return res;
-        }
-
-        return encryptedBytes;
+        return encryptedBytes.ToArray();
     }
 
     public byte[] DecryptParallel(byte[] data, int numThreads)
@@ -358,87 +254,48 @@ public class XXTEA : IBlockCipher
 
         this.receivedBytes += data.LongLength;
 
-        byte[] fullBuffer = new byte[this.lastBlockBuffer.Count + data.Length];
+        var decryptedBytes = new List<byte>();
 
-        /* Prepend the last leftover bytes to new data. */
-        Buffer.BlockCopy(this.lastBlockBuffer.ToArray(), 0, fullBuffer, 0, this.lastBlockBuffer.Count);
-        Buffer.BlockCopy(data, 0, fullBuffer, this.lastBlockBuffer.Count, data.Length);
+        byte[][] blocks = this.blockSplitter.SplitToBlocks(data);
 
-        byte[] leftOver = fullBuffer[(fullBuffer.Length - fullBuffer.Length % this.BlockBytes)..];
+        uint[][] blocksUInt32 = new uint[blocks.Length][];
 
-        uint[][] blocks = fullBuffer.SplitIntoUInt32BlocksOfSize(this.BlockBytes);
-
-        int fullSizedBlocksCount = blocks.Length - 1;
-
-        if (leftOver.Length > 0)
+        for (int i = 0; i < blocks.Length; i++)
         {
-            this.lastBlockBuffer = leftOver.ToList();
-            fullSizedBlocksCount = blocks.Length - 1;
-        }
-        else
-        {
-            fullSizedBlocksCount = blocks.Length;
-            this.lastBlockBuffer.Clear();
+            blocksUInt32[i] = blocks[i].ToUInt32Array();
         }
 
-        if (this.receivedBytes == this.paddedMessageLength)
-        {
-            this.lastBlockBuffer = new List<byte>(blocks[^1].ToByteArray());
-            fullSizedBlocksCount = blocks.Length - 1;
-        }
-
-        byte[] decryptedBytes = new byte[this.BlockBytes * fullSizedBlocksCount];
-
-        /* Last block may be of length < BlockSize. */
-        /* Process all of the BlockSize blocks. */
         var threads = new Thread[numThreads];
 
-        for (int i = 0; i < fullSizedBlocksCount; i++)
+        for (int i = 0; i < blocksUInt32.Length; i++)
         {
             int blockIndex = i;
 
             threads[i] = new Thread(() =>
             {
-                DecryptBlock(ref blocks[blockIndex], this.key);
+                DecryptBlock(ref blocksUInt32[blockIndex], this.key);
             });
             threads[i].Start();
         }
 
-        for (int i = 0; i < fullSizedBlocksCount; i++)
+
+        for (int i = 0; i < blocksUInt32.Length; i++)
         {
             threads[i].Join();
         }
 
-        for (int i = 0; i < fullSizedBlocksCount; i++)
+        for (int i = 0; i < blocksUInt32.Length; i++)
         {
-            Buffer.BlockCopy(blocks[i], 0, decryptedBytes, i * this.BlockBytes, blocks[i].Length * sizeof(uint));
-        }
-
-        if (this.receivedBytes == this.paddedMessageLength)
-        {
-            byte[] lastData = this.FinishDecryption();
-            byte[] res = new byte[this.BlockBytes * fullSizedBlocksCount + lastData.Length];
-
-            Buffer.BlockCopy(decryptedBytes, 0, res, 0, decryptedBytes.Length);
-            Buffer.BlockCopy(lastData, 0, res, this.BlockBytes * fullSizedBlocksCount, lastData.Length);
-
-            return res;
+            decryptedBytes.AddRange(blocksUInt32[i].ToByteArray());
         }
 
         if (this.messageLength == -1)
         {
-            byte[] messageLengthBytes = decryptedBytes[0..sizeof(long)];
-
-            /* Remove message length from message. */
-            decryptedBytes = decryptedBytes[sizeof(long)..];
-
-            this.messageLength = BitConverter.ToInt64(messageLengthBytes);
-
-            this.paddedMessageLength = this.messageLength + this.BlockBytes - 1;
-            this.paddedMessageLength -= (this.paddedMessageLength % this.BlockBytes);
+            this.messageLength = BitConverter.ToInt64(decryptedBytes.GetRange(0, sizeof(long)).ToArray());
+            decryptedBytes = decryptedBytes.GetRange(sizeof(long), decryptedBytes.Count - sizeof(long));
         }
 
-        return decryptedBytes;
+        return decryptedBytes.ToArray();
     }
 
     public byte[] EncryptBlock(byte[] data, byte[] key)

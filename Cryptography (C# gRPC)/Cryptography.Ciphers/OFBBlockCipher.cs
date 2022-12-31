@@ -22,7 +22,7 @@ public class OFBBlockCipher : IDisposable
             yield return plaintext;
         }
 
-        foreach (byte[] block in this.blockSplitter.Split(plaintext))
+        foreach (byte[] block in this.blockSplitter.EnumerateBlocks(plaintext))
         {
             this.outputFeedback = this.blockCipher.EncryptBlock(this.outputFeedback, this.blockCipher.Key);
 
