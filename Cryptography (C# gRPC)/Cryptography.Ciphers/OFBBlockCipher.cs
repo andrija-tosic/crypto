@@ -10,7 +10,7 @@ public class OFBBlockCipher : IDisposable
     public OFBBlockCipher(IBlockCipher blockCipher, byte[] IV)
     {
         this.blockCipher = blockCipher;
-        
+
         this.outputFeedback = new byte[IV.Length];
         Array.Copy(IV, this.outputFeedback, IV.Length);
 

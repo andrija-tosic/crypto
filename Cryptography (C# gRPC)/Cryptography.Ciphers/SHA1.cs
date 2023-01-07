@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Cryptography.Ciphers;
@@ -11,6 +12,7 @@ https://www.rfc-editor.org/rfc/rfc3174
 public class SHA1 : IDisposable
 {
     private ByteBlockSplitter blockSplitter = new(BlockBytes);
+    private uint[] W = new uint[80];
 
     /* Digest. */
     private readonly uint[] H = new uint[5]
@@ -43,31 +45,6 @@ public class SHA1 : IDisposable
         0xCA62C1D6,0xCA62C1D6,0xCA62C1D6,0xCA62C1D6,0xCA62C1D6,0xCA62C1D6,0xCA62C1D6,0xCA62C1D6,0xCA62C1D6,0xCA62C1D6
     };
 
-    /*
-		 A sequence of logical functions f(0), f(1),..., f(79) is used in
-		 SHA-1.  Each f(t), 0 <= t <= 79, operates on three 32-bit words B, C,
-		 D and produces a 32-bit word as output.  f(t;B,C,D) is defined as
-		 follows: for words B, C, D,
-	*/
-    private static uint FF(int t, uint B, uint C, uint D)
-    {
-        if (t is >= 0 and <= 19)
-        {
-            return (B & C) | ((~B) & D);
-        }
-        else
-        {
-            if (t is >= 20 and <= 39 or >= 60 and <= 79)
-            {
-                return B ^ C ^ D;
-            }
-            else
-            {
-                return (B & C) | (B & D) | (C & D);
-            }
-        }
-    }
-
     private static uint CircularLeftShift(int n, uint X)
     {
         return (X << n) | (X >> (32 - n));
@@ -77,7 +54,7 @@ public class SHA1 : IDisposable
     {
         foreach (byte[] block in this.blockSplitter.SplitToBlocks(buffer))
         {
-            this.HashBlock(block.ToList());
+            this.HashBlock(block);
             this.l += BlockBytes;
         }
 
@@ -86,14 +63,14 @@ public class SHA1 : IDisposable
 
     public void Finish()
     {
-        var remainingBytes = this.blockSplitter.Flush().ToList();
+        byte[] remainingBytes = this.blockSplitter.Flush();
 
-        this.l += (ulong)remainingBytes.Count;
+        this.l += (ulong)remainingBytes.Length;
 
-        if (remainingBytes.Count == BlockBytes)
+        if (remainingBytes.Length == BlockBytes)
         {
             this.HashBlock(remainingBytes);
-            remainingBytes.Clear();
+            remainingBytes = Array.Empty<byte>();
         }
 
         this.FinalPadMessage(remainingBytes.ToList());
@@ -113,18 +90,17 @@ public class SHA1 : IDisposable
         }
     }
 
-    private void HashBlock(List<byte> block)
+    private void HashBlock(Span<byte> block)
     {
-        Debug.Assert(block.Count == BlockBytes);
+        Debug.Assert(block.Length == BlockBytes);
 
         /* a. */
-        uint[] W = new uint[80];
 
         int t;
 
         for (t = 0; t < 16; t++)
         {
-            W[t] = (uint)((block[t * 4] & 0xff) << 24)
+            this.W[t] = (uint)((block[t * 4] & 0xff) << 24)
             | (uint)((block[t * 4 + 1] & 0xff) << 16)
             | (uint)((block[t * 4 + 2] & 0xff) << 8)
             | (uint)((block[t * 4 + 3] & 0xff) << 0);
@@ -133,16 +109,64 @@ public class SHA1 : IDisposable
         /* b. */
         for (t = 16; t < 80; t++)
         {
-            W[t] = CircularLeftShift(1, W[t - 3] ^ W[t - 8] ^ W[t - 14] ^ W[t - 16]);
+            this.W[t] = CircularLeftShift(1, this.W[t - 3] ^ this.W[t - 8] ^ this.W[t - 14] ^ this.W[t - 16]);
         }
 
         /* c. */
         uint A = this.H[0], B = this.H[1], C = this.H[2], D = this.H[3], E = this.H[4];
 
         /* d. */
-        for (t = 0; t < 80; t++)
+
+        uint TEMP;
+
+        /*
+            A sequence of logical functions f(0), f(1),..., f(79) is used in
+            SHA-1.  Each f(t), 0 <= t <= 79, operates on three 32-bit words B, C,
+            D and produces a 32-bit word as output.  f(t;B,C,D) is defined as
+            follows: for words B, C, D,
+        */
+
+        /* Loop unrolled. */
+        /* Round 1. */
+        for (t = 0; t < 20; t++)
         {
-            uint TEMP = CircularLeftShift(5, A) + FF(t, B, C, D) + E + W[t] + K[t];
+            TEMP = CircularLeftShift(5, A) + ((B & C) | ((~B) & D)) + E + this.W[t] + K[t];
+
+            E = D;
+            D = C;
+            C = CircularLeftShift(30, B);
+            B = A;
+            A = TEMP;
+        }
+
+        /* Round 2. */
+        for (t = 20; t < 40; t++)
+        {
+            TEMP = CircularLeftShift(5, A) + (B ^ C ^ D) + E + this.W[t] + K[t];
+
+            E = D;
+            D = C;
+            C = CircularLeftShift(30, B);
+            B = A;
+            A = TEMP;
+        }
+
+        /* Round 3. */
+        for (t = 40; t < 60; t++)
+        {
+            TEMP = CircularLeftShift(5, A) + ((B & C) | (B & D) | (C & D)) + E + this.W[t] + K[t];
+
+            E = D;
+            D = C;
+            C = CircularLeftShift(30, B);
+            B = A;
+            A = TEMP;
+        }
+
+        /* Round 4. */
+        for (t = 60; t < 80; t++)
+        {
+            TEMP = CircularLeftShift(5, A) + (B ^ C ^ D) + E + this.W[t] + K[t];
 
             E = D;
             D = C;
@@ -182,7 +206,7 @@ public class SHA1 : IDisposable
                 message.Add(0x00);
             }
 
-            this.HashBlock(message);
+            this.HashBlock(CollectionsMarshal.AsSpan(message));
 
             /* Processing final block. Vector is 64 bytes at this point. */
             message.RemoveRange(BlockBytes - spaceForLengthAppend, message.Count - (BlockBytes - spaceForLengthAppend));
@@ -227,7 +251,7 @@ public class SHA1 : IDisposable
         message.Add((byte)(lengthLow >> 8));
         message.Add((byte)lengthLow);
 
-        this.HashBlock(message);
+        this.HashBlock(CollectionsMarshal.AsSpan(message));
     }
 
     public void Dispose()

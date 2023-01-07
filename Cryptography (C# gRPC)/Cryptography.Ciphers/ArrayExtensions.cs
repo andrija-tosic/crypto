@@ -16,7 +16,7 @@ internal static class ArrayExtensions
 
             blocks[i] = new byte[length];
             Buffer.BlockCopy(data, offset, blocks[i], 0, length);
-            
+
             yield return blocks[i];
         }
     }
