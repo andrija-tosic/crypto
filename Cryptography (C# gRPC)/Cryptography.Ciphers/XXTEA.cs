@@ -96,7 +96,7 @@ public class XXTEA : IBlockCipher
         return decryptedBytes.ToArray();
     }
 
-    public byte[] FinishEncryption()
+    public Span<byte> FinishEncryption()
     {
         /* Pad to block size and encrypt. */
 
@@ -107,11 +107,13 @@ public class XXTEA : IBlockCipher
             return data;
         }
 
-        Span<uint> v = data.AsSpan().AsUInt32Span();
+        uint[] v = new uint[(int)Math.Ceiling((double)this.BlockBytes / sizeof(uint))];
+
+        Buffer.BlockCopy(data, 0, v, 0, data.Length);
 
         EncryptBlockInternal(v, this.key);
 
-        return v.AsByteSpan().ToArray();
+        return v.AsSpan().AsByteSpan();
     }
 
     public Span<byte> FinishDecryption()
@@ -131,11 +133,13 @@ public class XXTEA : IBlockCipher
 
         byte[] data = this.blockSplitter.Flush();
 
-        Span<uint> v = data.AsSpan().AsUInt32Span();
+        uint[] v = new uint[(int)Math.Ceiling((double)this.BlockBytes / sizeof(uint))];
+
+        Buffer.BlockCopy(data, 0, v, 0, data.Length);
 
         DecryptBlockInternal(v, this.key);
 
-        Span<byte> res = v.AsByteSpan()[..(int)(this.BlockBytes - padLength)];
+        Span<byte> res = v.AsSpan().AsByteSpan()[..(int)(this.BlockBytes - padLength)];
 
         return res;
     }

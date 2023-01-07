@@ -25,7 +25,7 @@ public class ByteBlockSplitter
             Buffer.BlockCopy(this.lastBlockBuffer.ToArray(), 0, fullBuffer, 0, this.lastBlockBuffer.Count);
             Buffer.BlockCopy(data, 0, fullBuffer, this.lastBlockBuffer.Count, data.Length);
 
-            byte[][] blocks = fullBuffer.SplitIntoBlocksOfSize(this.blockSize);
+            byte[][] blocks = fullBuffer.SplitIntoBlocksOfSize(this.blockSize).ToArray();
 
             for (int i = 0; i < blocks.Length - 1; i++)
             {
