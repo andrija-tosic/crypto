@@ -12,7 +12,7 @@ public class OneTimePad
 
         for (int i = 0; i < data.Length; i++)
         {
-            data[i] = (byte)(data[i] ^ pad[i]);
+            data[i] ^= pad[i];
         }
 
         return pad;
@@ -23,7 +23,7 @@ public class OneTimePad
 
         for (int i = 0; i < pad.Length; i++)
         {
-            data[i] = (byte)(data[i] ^ pad[i]);
+            data[i] ^= pad[i];
         }
     }
 }

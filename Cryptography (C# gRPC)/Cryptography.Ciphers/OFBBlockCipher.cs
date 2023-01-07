@@ -28,14 +28,12 @@ public class OFBBlockCipher : IDisposable
         {
             this.outputFeedback = this.blockCipher.EncryptBlock(this.outputFeedback, this.blockCipher.Key);
 
-            byte[] ciphertext = new byte[this.outputFeedback.Length];
-
             for (int i = 0; i < this.outputFeedback.Length; i++)
             {
-                ciphertext[i] = (byte)(block[i] ^ this.outputFeedback[i]);
+                block[i] ^= this.outputFeedback[i];
             }
 
-            yield return ciphertext;
+            yield return block;
         }
     }
 
