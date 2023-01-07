@@ -155,7 +155,7 @@ public class CryptographyService : Cryptography.CryptographyBase
             await responseStream.WriteAsync(res);
         } while (await requestStream.MoveNext());
 
-        byte[] last = xxtea.FinishDecryption();
+        byte[] last = xxtea.FinishDecryption().ToArray();
 
         ByteArray lastByteArray = new()
         {
@@ -221,7 +221,7 @@ public class CryptographyService : Cryptography.CryptographyBase
             await responseStream.WriteAsync(res);
         } while (await requestStream.MoveNext());
 
-        byte[] last = xxtea.FinishDecryption();
+        byte[] last = xxtea.FinishDecryption().ToArray();
 
         ByteArray lastByteArray = new()
         {

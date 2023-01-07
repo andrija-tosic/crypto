@@ -10,7 +10,6 @@ https://www.rfc-editor.org/rfc/rfc3174
 
 public class SHA1 : IDisposable
 {
-    private List<byte> lastBlockBuffer = new(BlockBytes);
     private ByteBlockSplitter blockSplitter = new(BlockBytes);
 
     /* Digest. */

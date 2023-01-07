@@ -1,4 +1,6 @@
-﻿namespace Cryptography.Ciphers;
+﻿using System.Runtime.InteropServices;
+
+namespace Cryptography.Ciphers;
 
 internal static class ArrayExtensions
 {
@@ -44,6 +46,11 @@ internal static class ArrayExtensions
         return byteArray;
     }
 
+    public static Span<byte> AsByteSpan(this Span<uint> data)
+    {
+        return MemoryMarshal.AsBytes(data);
+    }
+
     public static uint[] ToUInt32Array(this byte[] data)
     {
         uint[] uintArray = new uint[(int)Math.Ceiling((double)data.Length / sizeof(uint))];
@@ -53,4 +60,8 @@ internal static class ArrayExtensions
         return uintArray;
     }
 
+    public static Span<uint> AsUInt32Span(this Span<byte> data)
+    {
+        return MemoryMarshal.Cast<byte, uint>(data);
+    }
 }

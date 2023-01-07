@@ -1,14 +1,15 @@
-﻿namespace Cryptography.Ciphers;
+﻿using System.Runtime.InteropServices;
+
+namespace Cryptography.Ciphers;
 public class XXTEA : IBlockCipher
 {
     private const uint Delta = 0x9E3779B9;
     private readonly uint[] key;
 
-    private List<byte> lastBlockBuffer;
     private long messageLength;
     private long paddedMessageLength;
     public int BlockBytes { get; set; }
-    public byte[] Key { get { return this.key.ToByteArray(); } }
+    public Span<byte> Key { get { return this.key.AsSpan().AsByteSpan(); } }
     private ByteBlockSplitter blockSplitter;
 
     public XXTEA(byte[] key, long messageLength, int blockSize)
@@ -23,13 +24,9 @@ public class XXTEA : IBlockCipher
         this.key = new uint[4];
         Buffer.BlockCopy(key, 0, this.key, 0, 16);
 
-        this.lastBlockBuffer = new List<byte>(this.BlockBytes);
-
         this.messageLength = messageLength;
         this.paddedMessageLength = this.messageLength + sizeof(long) + this.BlockBytes - 1;
         this.paddedMessageLength -= this.paddedMessageLength % this.BlockBytes;
-
-        this.lastBlockBuffer.AddRange(BitConverter.GetBytes(messageLength));
 
         this.blockSplitter = new(this.BlockBytes);
         this.blockSplitter.PrependData(BitConverter.GetBytes(messageLength));
@@ -41,8 +38,6 @@ public class XXTEA : IBlockCipher
 
         this.key = new uint[4];
         Buffer.BlockCopy(key, 0, this.key, 0, 16);
-
-        this.lastBlockBuffer = new List<byte>(this.BlockBytes);
 
         this.messageLength = -1;
 
@@ -56,14 +51,14 @@ public class XXTEA : IBlockCipher
             return data;
         }
 
-        var encryptedBytes = new List<byte>();
+        var encryptedBytes = new List<byte>((int)Math.Ceiling((double)data.Length / this.BlockBytes));
 
         foreach (byte[] block in this.blockSplitter.SplitToBlocks(data))
         {
-            uint[] res = block.ToUInt32Array();
-            EncryptBlock(ref res, this.key);
+            Span<uint> res = block.AsSpan().AsUInt32Span();
+            EncryptBlockInternal(res, this.key);
 
-            encryptedBytes.AddRange(res.ToByteArray());
+            encryptedBytes.AddRange(res.AsByteSpan().ToArray());
         }
 
         return encryptedBytes.ToArray();
@@ -76,19 +71,18 @@ public class XXTEA : IBlockCipher
             return data;
         }
 
-        var decryptedBytes = new List<byte>();
+        var decryptedBytes = new List<byte>((int)Math.Ceiling((double)data.Length / this.BlockBytes));
 
         foreach (byte[] block in this.blockSplitter.SplitToBlocks(data))
         {
+            Span<uint> res = block.AsSpan().AsUInt32Span();
+            DecryptBlockInternal(res, this.key);
 
-            uint[] res = block.ToUInt32Array();
-            DecryptBlock(ref res, this.key);
-
-            byte[] currentBlock = res.ToByteArray();
+            Span<byte> currentBlock = res.AsByteSpan();
 
             if (this.messageLength == -1)
             {
-                this.messageLength = BitConverter.ToInt64(currentBlock.AsSpan()[0..sizeof(long)]);
+                this.messageLength = BitConverter.ToInt64(currentBlock[0..sizeof(long)]);
 
                 this.paddedMessageLength = this.messageLength + sizeof(long) + this.BlockBytes - 1;
                 this.paddedMessageLength -= this.paddedMessageLength % this.BlockBytes;
@@ -96,7 +90,7 @@ public class XXTEA : IBlockCipher
                 currentBlock = currentBlock[sizeof(long)..];
             }
 
-            decryptedBytes.AddRange(currentBlock);
+            decryptedBytes.AddRange(currentBlock.ToArray());
         }
 
         return decryptedBytes.ToArray();
@@ -113,18 +107,14 @@ public class XXTEA : IBlockCipher
             return data;
         }
 
-        uint[] v = new uint[this.BlockBytes / sizeof(uint)];
+        Span<uint> v = data.AsSpan().AsUInt32Span();
 
-        Buffer.BlockCopy(data, 0, v, 0, data.Length);
+        EncryptBlockInternal(v, this.key);
 
-        EncryptBlock(ref v, this.key);
-
-        this.lastBlockBuffer.Clear();
-
-        return v.ToByteArray();
+        return v.AsByteSpan().ToArray();
     }
 
-    public byte[] FinishDecryption()
+    public Span<byte> FinishDecryption()
     {
         /* Decrypt block and remove padding. */
 
@@ -141,22 +131,16 @@ public class XXTEA : IBlockCipher
 
         byte[] data = this.blockSplitter.Flush();
 
-        uint[] v = new uint[this.BlockBytes / sizeof(uint)];
+        Span<uint> v = data.AsSpan().AsUInt32Span();
 
-        Buffer.BlockCopy(data, 0, v, 0, data.Length);
+        DecryptBlockInternal(v, this.key);
 
-        DecryptBlock(ref v, this.key);
-
-        byte[] res = new byte[this.BlockBytes - padLength];
-
-        Buffer.BlockCopy(v, 0, res, 0, this.BlockBytes - (int)padLength);
-
-        this.lastBlockBuffer.Clear();
+        Span<byte> res = v.AsByteSpan()[..(int)(this.BlockBytes - padLength)];
 
         return res;
     }
 
-    public static void EncryptBlock(ref uint[] v, uint[] k)
+    private static void EncryptBlockInternal(Span<uint> v, Span<uint> k)
     {
         int n = v.Length - 1;
         if (n < 1)
@@ -176,15 +160,15 @@ public class XXTEA : IBlockCipher
             for (p = 0; p < n; p++)
             {
                 y = v[p + 1];
-                z = v[p] += (((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4))) ^ ((sum ^ y) + (k[(p & 3) ^ e] ^ z));
+                z = v[p] += (((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4))) ^ ((sum ^ y) + (k[(int)((p & 3) ^ e)] ^ z));
             }
 
             y = v[0];
-            z = v[n] += (((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4))) ^ ((sum ^ y) + (k[(p & 3) ^ e] ^ z));
+            z = v[n] += (((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4))) ^ ((sum ^ y) + (k[(int)((p & 3) ^ e)] ^ z));
         }
     }
 
-    public static void DecryptBlock(ref uint[] v, uint[] k)
+    private static void DecryptBlockInternal(Span<uint> v, Span<uint> k)
     {
         int n = v.Length - 1;
         if (n < 1)
@@ -203,11 +187,11 @@ public class XXTEA : IBlockCipher
             for (p = n; p > 0; p--)
             {
                 z = v[p - 1];
-                y = v[p] -= (((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4))) ^ ((sum ^ y) + (k[(p & 3) ^ e] ^ z));
+                y = v[p] -= (((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4))) ^ ((sum ^ y) + (k[(int)((p & 3) ^ e)] ^ z));
             }
 
             z = v[n];
-            y = v[0] -= (((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4))) ^ ((sum ^ y) + (k[(p & 3) ^ e] ^ z));
+            y = v[0] -= (((z >> 5) ^ (y << 2)) + ((y >> 3) ^ (z << 4))) ^ ((sum ^ y) + (k[(int)((p & 3) ^ e)] ^ z));
             sum -= Delta;
         }
     }
@@ -219,9 +203,9 @@ public class XXTEA : IBlockCipher
             return data;
         }
 
-        var encryptedBytes = new List<byte>();
-
         byte[][] blocks = this.blockSplitter.SplitToBlocks(data).ToArray();
+
+        byte[] encryptedBytes = new byte[blocks.Length * this.BlockBytes];
 
         uint[][] blocksUInt32 = new uint[blocks.Length][];
 
@@ -233,15 +217,15 @@ public class XXTEA : IBlockCipher
         _ = Parallel.For(0, blocksUInt32.Length, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, i =>
         {
             int blockIndex = i;
-            EncryptBlock(ref blocksUInt32[blockIndex], this.key);
+            EncryptBlockInternal(blocksUInt32[blockIndex], this.key);
         });
 
         for (int i = 0; i < blocksUInt32.Length; i++)
         {
-            encryptedBytes.AddRange(blocksUInt32[i].ToByteArray());
+            Buffer.BlockCopy(blocksUInt32[i], 0, encryptedBytes, i * this.BlockBytes, this.BlockBytes);
         }
 
-        return encryptedBytes.ToArray();
+        return encryptedBytes;
     }
 
     public byte[] DecryptParallel(byte[] data, int numThreads)
@@ -251,10 +235,7 @@ public class XXTEA : IBlockCipher
             return data;
         }
 
-        var decryptedBytes = new List<byte>();
-
         byte[][] blocks = this.blockSplitter.SplitToBlocks(data).ToArray();
-
         uint[][] blocksUInt32 = new uint[blocks.Length][];
 
         for (int i = 0; i < blocks.Length; i++)
@@ -265,44 +246,46 @@ public class XXTEA : IBlockCipher
         _ = Parallel.For(0, blocksUInt32.Length, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, i =>
         {
             int blockIndex = i;
-            DecryptBlock(ref blocksUInt32[blockIndex], this.key);
+            DecryptBlockInternal(blocksUInt32[blockIndex].AsSpan(), this.key);
         });
+
+        byte[] decryptedBytes = new byte[blocks.Length * this.BlockBytes];
 
         for (int i = 0; i < blocksUInt32.Length; i++)
         {
-            decryptedBytes.AddRange(blocksUInt32[i].ToByteArray());
+            Buffer.BlockCopy(blocksUInt32[i], 0, decryptedBytes, i * this.BlockBytes, this.BlockBytes);
         }
 
         if (this.messageLength == -1)
         {
-            this.messageLength = BitConverter.ToInt64(decryptedBytes.GetRange(0, sizeof(long)).ToArray());
+            this.messageLength = BitConverter.ToInt64(decryptedBytes, 0);
 
             this.paddedMessageLength = this.messageLength + sizeof(long) + this.BlockBytes - 1;
             this.paddedMessageLength -= this.paddedMessageLength % this.BlockBytes;
 
-            decryptedBytes = decryptedBytes.GetRange(sizeof(long), decryptedBytes.Count - sizeof(long));
+            decryptedBytes = decryptedBytes[sizeof(long)..];
         }
 
-        return decryptedBytes.ToArray();
+        return decryptedBytes;
     }
 
-    public byte[] EncryptBlock(byte[] data, byte[] key)
+    public byte[] EncryptBlock(byte[] data, Span<byte> key)
     {
-        uint[] keyUInt32 = key.ToUInt32Array();
-        uint[] dataUInt32 = data.ToUInt32Array();
+        Span<uint> keyUInt32 = key.AsUInt32Span();
+        Span<uint> dataUInt32 = data.AsSpan().AsUInt32Span();
 
-        EncryptBlock(ref dataUInt32, keyUInt32);
+        EncryptBlockInternal(dataUInt32, keyUInt32);
 
-        return dataUInt32.ToByteArray();
+        return dataUInt32.AsByteSpan().ToArray();
     }
 
-    public byte[] DecryptBlock(byte[] data, byte[] key)
+    public byte[] DecryptBlock(byte[] data, Span<byte> key)
     {
-        uint[] keyUInt32 = key.ToUInt32Array();
-        uint[] dataUInt32 = data.ToUInt32Array();
+        Span<uint> keyUInt32 = key.AsUInt32Span();
+        Span<uint> dataUInt32 = data.AsSpan().AsUInt32Span();
 
-        DecryptBlock(ref dataUInt32, keyUInt32);
+        DecryptBlockInternal(dataUInt32, keyUInt32);
 
-        return dataUInt32.ToByteArray();
+        return dataUInt32.AsByteSpan().ToArray();
     }
 }

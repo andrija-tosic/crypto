@@ -10,7 +10,9 @@ public class OFBBlockCipher : IDisposable
     public OFBBlockCipher(IBlockCipher blockCipher, byte[] IV)
     {
         this.blockCipher = blockCipher;
-        this.outputFeedback = (byte[])IV.Clone();
+        
+        this.outputFeedback = new byte[IV.Length];
+        Array.Copy(IV, this.outputFeedback, IV.Length);
 
         this.blockSplitter = new ByteBlockSplitter(IV.Length);
     }
@@ -43,11 +45,9 @@ public class OFBBlockCipher : IDisposable
 
         this.outputFeedback = this.blockCipher.EncryptBlock(this.outputFeedback, this.blockCipher.Key);
 
-        byte[] ciphertext = new byte[this.outputFeedback.Length];
-
         for (int i = 0; i < leftOverBytes.Length; i++)
         {
-            ciphertext[i] = (byte)(leftOverBytes[i] ^ this.outputFeedback[i]);
+            leftOverBytes[i] ^= this.outputFeedback[i];
         }
 
         return leftOverBytes;
