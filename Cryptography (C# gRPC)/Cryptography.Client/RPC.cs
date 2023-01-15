@@ -451,7 +451,7 @@ public class RPC
         await streamingCall.RequestStream.CompleteAsync();
         await response;
     }
-    public async Task EncryptDecryptAndCheckSHA1Hash(Cipher cipher, string inFilePath, string key1, string key2)
+    public async Task EncryptDecryptAndCheckSHA1HashAsync(Cipher cipher, string inFilePath, string key1 = "", string key2 = "")
     {
         try
         {
@@ -460,13 +460,13 @@ public class RPC
             string fileName = Path.GetFileNameWithoutExtension(inFilePath);
             string fileExt = Path.GetExtension(inFilePath);
 
-            string encryptedFilePath = dirPath + "/" + fileName + ".enc" + fileExt;
-            string decryptedFilePath = dirPath + "/" + fileName + ".dec" + fileExt;
-            string padFilePath = dirPath + "/" + fileName + ".pad";
+            string encryptedFilePath = dirPath + "/Results/" + fileName + ".enc" + fileExt;
+            string decryptedFilePath = dirPath + "/Results/" + fileName + ".dec" + fileExt;
+            string padFilePath = dirPath + "/Results/" + fileName + ".pad";
 
             long fileSize = new FileInfo(inFilePath).Length;
 
-            Console.WriteLine($"{BlockFileStreamReader.BytesToString(fileSize)} file");
+            Console.WriteLine($"{BlockFileStreamReader.HumanReadableFileSize(fileSize)} file");
 
             var stopwatch = Stopwatch.StartNew();
 

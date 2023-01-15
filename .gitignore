@@ -1,6 +1,4 @@
-*_example.enc.*
-*_example.dec.*
-*_example.pad
+**/Resources/Results/*
 
 # Rider config files
 .idea/

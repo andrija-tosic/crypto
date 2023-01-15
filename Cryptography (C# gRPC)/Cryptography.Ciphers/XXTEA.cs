@@ -118,17 +118,6 @@ public class XXTEA : IBlockCipher
     {
         /* Decrypt block and remove padding. */
 
-        long padLength;
-
-        if (this.paddedMessageLength == this.messageLength)
-        {
-            return Array.Empty<byte>();
-        }
-        else
-        {
-            padLength = this.paddedMessageLength - sizeof(long) - this.messageLength;
-        }
-
         byte[] data = this.blockSplitter.Flush();
 
         uint[] v = new uint[(int)Math.Ceiling((double)this.BlockBytes / sizeof(uint))];
@@ -137,7 +126,41 @@ public class XXTEA : IBlockCipher
 
         DecryptBlockInternal(v, this.key);
 
-        Span<byte> res = v.AsSpan().AsByteSpan()[..(int)(this.BlockBytes - padLength)];
+        Span<byte> decryptedData = v.AsSpan().AsByteSpan();
+
+        bool trimMessageLength = this.messageLength == -1;
+
+        if (trimMessageLength)
+        {
+            this.messageLength = BitConverter.ToInt64(decryptedData[0..sizeof(long)]);
+
+            this.paddedMessageLength = this.messageLength + sizeof(long) + this.BlockBytes - 1;
+            this.paddedMessageLength -= this.paddedMessageLength % this.BlockBytes;
+
+            decryptedData = decryptedData[sizeof(long)..];
+        }
+
+        long padLength;
+
+        if (this.paddedMessageLength == this.messageLength)
+        {
+            return Array.Empty<byte>();
+        }
+        else
+        {
+            if (!trimMessageLength)
+            {
+                padLength = this.paddedMessageLength - sizeof(long) - this.messageLength;
+
+            }
+            else
+            {
+                padLength = this.paddedMessageLength - this.messageLength;
+
+            }
+        }
+
+        Span<byte> res = decryptedData[..(int)(this.BlockBytes - padLength)];
 
         return res;
     }

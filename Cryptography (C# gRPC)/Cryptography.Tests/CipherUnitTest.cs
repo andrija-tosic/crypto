@@ -70,7 +70,7 @@ public class CipherUnitTest : IClassFixture<ServerFixture>
     }
 
     [Theory]
-    [InlineData(testFilesPath + "xxtea_example.zip", "1234567812345678")]
+    [InlineData(testFilesPath + "xxtea_example.jpg", "1234567812345678")]
     public async Task XXTEA_Encrypt_Decrypt_Compare_SHA1(string inFilePath, string key)
     {
         var rpcClient = new RPC(this.serverFixture.Client);

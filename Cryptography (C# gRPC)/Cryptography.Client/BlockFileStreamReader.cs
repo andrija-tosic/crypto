@@ -49,7 +49,7 @@ public class BlockFileStreamReader : IDisposable
         }
     }
 
-    public static string BytesToString(long byteCount)
+    public static string HumanReadableFileSize(long byteCount)
     {
         string[] suf = { "B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB" };
 
