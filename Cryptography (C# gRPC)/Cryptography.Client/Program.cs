@@ -3,7 +3,7 @@ using Cryptography.Client;
 using Grpc.Net.Client;
 using System.Diagnostics;
 
-var channel = GrpcChannel.ForAddress($"http://localhost:5000", new GrpcChannelOptions
+var channel = GrpcChannel.ForAddress($"http://localhost:5150", new GrpcChannelOptions
 {
     MaxReceiveMessageSize = 16 * 1024 * 1024,
 });
@@ -14,6 +14,8 @@ string workingDirectory = Environment.CurrentDirectory;
 string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
 
 string resourcesPath = projectDirectory + "/Resources/";
+
+Directory.CreateDirectory(resourcesPath + "Results");
 
 var dirInfo = new DirectoryInfo(resourcesPath + "Results/");
 
