@@ -17,20 +17,20 @@ public class OFBBlockCipher : IDisposable
         this.blockSplitter = new ByteBlockSplitter(IV.Length);
     }
 
-    public IEnumerable<byte[]> Encrypt(byte[] plaintext)
+    public IEnumerable<Memory<byte>> Encrypt(byte[] plaintext)
     {
         if (plaintext.Length == 0)
         {
             yield return plaintext;
         }
 
-        foreach (byte[] block in this.blockSplitter.SplitToBlocks(plaintext))
+        foreach (Memory<byte> block in this.blockSplitter.SplitToBlocks(plaintext))
         {
             this.outputFeedback = this.blockCipher.EncryptBlock(this.outputFeedback, this.blockCipher.Key);
 
             for (int i = 0; i < this.outputFeedback.Length; i++)
             {
-                block[i] ^= this.outputFeedback[i];
+                block.Span[i] ^= this.outputFeedback[i];
             }
 
             yield return block;
@@ -51,7 +51,7 @@ public class OFBBlockCipher : IDisposable
         return leftOverBytes;
     }
 
-    public IEnumerable<byte[]> Decrypt(byte[] plaintext)
+    public IEnumerable<Memory<byte>> Decrypt(byte[] plaintext)
     {
         return this.Encrypt(plaintext);
     }

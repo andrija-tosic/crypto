@@ -51,9 +51,9 @@ public class XXTEA : IBlockCipher
 
         var encryptedBytes = new List<byte>((int)Math.Ceiling((double)data.Length / this.BlockBytes));
 
-        foreach (byte[] block in this.blockSplitter.SplitToBlocks(data))
+        foreach (Memory<byte> block in this.blockSplitter.SplitToBlocks(data))
         {
-            Span<uint> res = block.AsSpan().AsUInt32Span();
+            Span<uint> res = block.Span.AsUInt32Span();
             EncryptBlockInternal(res, this.key);
 
             encryptedBytes.AddRange(res.AsByteSpan().ToArray());
@@ -71,9 +71,9 @@ public class XXTEA : IBlockCipher
 
         var decryptedBytes = new List<byte>((int)Math.Ceiling((double)data.Length / this.BlockBytes));
 
-        foreach (byte[] block in this.blockSplitter.SplitToBlocks(data))
+        foreach (Memory<byte> block in this.blockSplitter.SplitToBlocks(data))
         {
-            Span<uint> res = block.AsSpan().AsUInt32Span();
+            Span<uint> res = block.Span.AsUInt32Span();
             DecryptBlockInternal(res, this.key);
 
             Span<byte> currentBlock = res.AsByteSpan();
@@ -228,7 +228,7 @@ public class XXTEA : IBlockCipher
             return data;
         }
 
-        byte[][] blocks = this.blockSplitter.SplitToBlocks(data).ToArray();
+        byte[][] blocks = this.blockSplitter.SplitToByteArrayBlocks(data).ToArray();
 
         byte[] encryptedBytes = new byte[blocks.Length * this.BlockBytes];
 
@@ -239,11 +239,7 @@ public class XXTEA : IBlockCipher
             blocksUInt32[i] = blocks[i].ToUInt32Array();
         }
 
-        _ = Parallel.For(0, blocksUInt32.Length, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, i =>
-        {
-            int blockIndex = i;
-            EncryptBlockInternal(blocksUInt32[blockIndex], this.key);
-        });
+        _ = Parallel.ForEach(blocksUInt32, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, block => EncryptBlockInternal(block, this.key));
 
         for (int i = 0; i < blocksUInt32.Length; i++)
         {
@@ -260,7 +256,7 @@ public class XXTEA : IBlockCipher
             return data;
         }
 
-        byte[][] blocks = this.blockSplitter.SplitToBlocks(data).ToArray();
+        byte[][] blocks = this.blockSplitter.SplitToByteArrayBlocks(data).ToArray();
         uint[][] blocksUInt32 = new uint[blocks.Length][];
 
         for (int i = 0; i < blocks.Length; i++)
@@ -268,11 +264,7 @@ public class XXTEA : IBlockCipher
             blocksUInt32[i] = blocks[i].ToUInt32Array();
         }
 
-        _ = Parallel.For(0, blocksUInt32.Length, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, i =>
-        {
-            int blockIndex = i;
-            DecryptBlockInternal(blocksUInt32[blockIndex].AsSpan(), this.key);
-        });
+        _ = Parallel.ForEach(blocksUInt32, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, block => DecryptBlockInternal(block, this.key));
 
         byte[] decryptedBytes = new byte[blocks.Length * this.BlockBytes];
 

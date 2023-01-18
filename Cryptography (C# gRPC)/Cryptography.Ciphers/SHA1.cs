@@ -52,9 +52,9 @@ public class SHA1 : IDisposable
 
     public void ProcessBuffer(byte[] buffer)
     {
-        foreach (byte[] block in this.blockSplitter.SplitToBlocks(buffer))
+        foreach (Memory<byte>  block in this.blockSplitter.SplitToBlocks(buffer))
         {
-            this.HashBlock(block);
+            this.HashBlock(block.Span);
             this.l += BlockBytes;
         }
 

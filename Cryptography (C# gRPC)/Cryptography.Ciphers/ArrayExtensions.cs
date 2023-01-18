@@ -4,20 +4,19 @@ namespace Cryptography.Ciphers;
 
 internal static class ArrayExtensions
 {
-    public static IEnumerable<byte[]> SplitIntoBlocksOfSize(this byte[] data, int blockBytes)
+    public static IEnumerable<Memory<byte>> SliceIntoBlocksOfSize(this byte[] data, int blockBytes)
     {
         int numBlocks = (int)Math.Ceiling((double)data.Length / blockBytes);
-        byte[][] blocks = new byte[numBlocks][];
+
+        Memory<byte> dataMemory = data.AsMemory();
+
         for (int i = 0; i < numBlocks; i++)
         {
             int offset = i * blockBytes;
             int remaining = data.Length - offset;
             int length = Math.Min(blockBytes, remaining);
 
-            blocks[i] = new byte[length];
-            Buffer.BlockCopy(data, offset, blocks[i], 0, length);
-
-            yield return blocks[i];
+            yield return dataMemory.Slice(offset, length);
         }
     }
 

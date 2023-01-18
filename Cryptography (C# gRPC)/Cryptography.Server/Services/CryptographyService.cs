@@ -244,11 +244,11 @@ public class CryptographyService : Cryptography.CryptographyBase
         {
             byte[] toEncrypt = requestStream.Current.Bytes.ToByteArray();
 
-            foreach (byte[] encryptedBlock in xxteaOfb.Encrypt(toEncrypt))
+            foreach (Memory<byte> encryptedBlock in xxteaOfb.Encrypt(toEncrypt))
             {
                 ByteArray res = new()
                 {
-                    Bytes = ByteString.CopyFrom(encryptedBlock)
+                    Bytes = ByteString.CopyFrom(encryptedBlock.Span)
                 };
 
                 await responseStream.WriteAsync(res);
@@ -278,11 +278,11 @@ public class CryptographyService : Cryptography.CryptographyBase
         {
             byte[] toDecrypt = requestStream.Current.Bytes.ToByteArray();
 
-            foreach (byte[] encryptedBlock in xxteaOfb.Decrypt(toDecrypt))
+            foreach (Memory<byte> encryptedBlock in xxteaOfb.Decrypt(toDecrypt))
             {
                 ByteArray res = new()
                 {
-                    Bytes = ByteString.CopyFrom(encryptedBlock)
+                    Bytes = ByteString.CopyFrom(encryptedBlock.Span)
                 };
 
                 await responseStream.WriteAsync(res);
