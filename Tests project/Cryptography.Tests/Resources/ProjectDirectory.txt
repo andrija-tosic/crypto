@@ -1,1 +1,0 @@
-D:\Desktop\crypt\Cryptography (C# gRPC)\Cryptography.Tests\ 
