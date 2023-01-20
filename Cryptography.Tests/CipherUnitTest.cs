@@ -8,7 +8,7 @@ namespace CryptoClient.Cryptography.Cryptography.Tests;
 
 public class CipherUnitTest : IClassFixture<ServerFixture>
 {
-    private const string testFilesPath = "D:\\Desktop\\crypt\\Cryptography (C# gRPC)\\Cryptography.Tests\\Resources\\";
+    private const string testFilesPath = "D:\\Desktop\\crypt\\Cryptography.Tests\\Resources\\";
     private readonly ServerFixture serverFixture;
 
     public CipherUnitTest(ServerFixture serverFixture)
